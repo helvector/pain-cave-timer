@@ -14,15 +14,19 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "parse": "tsx scripts/parse.ts"
+    "parse": "tsx scripts/parse.ts",
+    "fetch": "tsx scripts/fetch.ts"
   },
   "dependencies": {
+    "imapflow": "^2.0.5",
+    "mailparser": "^3.9.28",
     "next": "16.3.5",
     "node-html-parser": "^7.0.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

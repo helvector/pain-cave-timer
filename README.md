@@ -5,7 +5,7 @@ schedules the session in TrainingPeaks; the nightly "Schedule for …" email
 is parsed into a flat list of blocks; the screen shows one thing at a time:
 zone, target watts, seconds remaining. Blocks auto-advance with an audio cue.
 
-Status: **data model and parser only.** No UI, no mail fetch yet.
+Status: **parser and mail fetch done.** No UI yet.
 
 ## Layout
 
@@ -20,8 +20,11 @@ src/lib/workout/
   email-html.ts   TrainingPeaks email HTML → per-day tree (+ Time, TSS, description)
   expand.ts       tree → flat blocks; set positions; cues; start offsets
   index.ts        parseTrainingPeaksEmail / parseWorkoutFromText / pickWorkout
-src/lib/mail/types.ts   MailSource interface (IMAP implementation is next)
+src/lib/workout/fetch-today.ts  newest emails → workout for a date
+src/lib/mail/           MailSource interface, env config, IMAP source (imapflow + mailparser)
+src/app/api/workout/    GET /api/workout?date=… behind a bearer token
 scripts/parse.ts        CLI: print the block list for a saved email or text file
+scripts/fetch.ts        CLI: fetch today's workout from the mailbox using .env.local
 fixtures/               redacted samples used by tests; fixtures/raw/ is gitignored
 ```
 
@@ -56,6 +59,24 @@ To check a real email: save it as `.eml` or its HTML body as `.html` under
 `fixtures/raw/` (gitignored) and run `npm run parse -- fixtures/raw/<file> --date 2026-09-10`.
 Before committing any sample, strip every URL: TrainingPeaks links carry
 account and unsubscribe tokens.
+
+## Mail fetch
+
+`GET /api/workout` (header `Authorization: Bearer $APP_TOKEN`, optional
+`?date=yyyy-mm-dd`) opens a short-lived IMAP connection, takes the newest
+messages from `MAIL_FROM`, parses each until one contains the requested date,
+and returns `{ date, workout, email, days, warnings }`. "Today" is computed in
+`APP_TIMEZONE` because Vercel runs in UTC. There is no nearest-day fallback:
+if the date is not in the last few emails you get a 404 with the days that
+were seen.
+
+Locally, copy `.env.example` to `.env.local` (Gmail needs an App Password)
+and run:
+
+```bash
+npm run fetch
+npm run fetch -- --date 2026-09-10 --json
+```
 
 ## Secrets
 

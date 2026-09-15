@@ -71,7 +71,10 @@ export function parseWorkoutFromText(text: string, opts: ParseOptions & { title?
   }, opts.ftp);
 }
 
-/** Choose the day to ride: exact date match, else the first non-rest day on or after it. */
+/**
+ * Choose the day to ride by exact date. No "nearest day" fallback: serving a
+ * different day's session as today's is worse than saying there is none.
+ */
 export function pickWorkout(days: Workout[], dateISO: string): Workout | undefined {
-  return days.find((d) => d.date === dateISO) ?? days.find((d) => d.date >= dateISO && !d.isRestDay);
+  return days.find((d) => d.date === dateISO);
 }
