@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# env / secrets — never commit; config lives in Vercel env vars
+.env
+.env.*
+!.env.example
+
+# unredacted mail samples (real emails contain account tokens)
+fixtures/raw/
+
+# vercel
+.vercel/
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
+coverage/
