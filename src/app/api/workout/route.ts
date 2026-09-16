@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createImapSource, mailConfigFromEnv } from "@/lib/mail";
 import { fetchWorkoutFor } from "@/lib/workout/fetch-today";
 import { appTimeZone, todayIn } from "@/lib/date";
+import { demoWorkouts } from "@/lib/workout/demo";
+import { pickWorkout } from "@/lib/workout";
 
 // imapflow needs Node sockets, and the result must never be cached.
 export const runtime = "nodejs";
@@ -15,16 +17,23 @@ export const dynamic = "force-dynamic";
  * TrainingPeaks email. The deployment is public, so a shared token gates it.
  */
 export async function GET(req: NextRequest) {
-  const token = process.env.APP_TOKEN?.trim();
-  if (!token) return NextResponse.json({ error: "APP_TOKEN is not configured" }, { status: 500 });
-  const provided = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (provided !== token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   const dateParam = req.nextUrl.searchParams.get("date");
   if (dateParam && !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
     return NextResponse.json({ error: "date must be yyyy-mm-dd" }, { status: 400 });
   }
   const date = dateParam ?? todayIn(appTimeZone());
+
+  // Demo mode: the redacted fixture, no mailbox, no token. Nothing private in it.
+  if (req.nextUrl.searchParams.get("demo") === "1") {
+    const days = demoWorkouts(date);
+    return NextResponse.json({ date, workout: pickWorkout(days, date), days, warnings: [], demo: true });
+  }
+
+  const token = process.env.APP_TOKEN?.trim();
+  if (!token) return NextResponse.json({ error: "APP_TOKEN is not configured" }, { status: 500 });
+  const provided = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  if (provided !== token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const ftp = process.env.FTP_WATTS ? Number(process.env.FTP_WATTS) : undefined;
 
   try {
