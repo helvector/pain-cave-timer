@@ -1,13 +1,162 @@
 :root {
   color-scheme: dark;
-  background: #000;
-  color: #fff;
+  --bg: #000;
+  --fg: #fff;
+  --muted: #9a9a9a;
+  --line: #2a2a2a;
+  --work: #ff5a36;
+  --recovery: #3fa9f5;
+  --easy: #b8b8b8;
+  --warn: #ffcc4d;
+  --bg-work: #2a0a05;
+  --bg-recovery: #04182a;
+  --bg-easy: #111114;
 }
-html,
-body {
+
+* { box-sizing: border-box; }
+
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "ss01" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 22px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button:disabled { opacity: 0.4; cursor: default; }
+button.primary {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding: 18px 32px;
+}
+input {
+  font: inherit;
+  color: inherit;
+  background: #111;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+/* ---- shared layout ---------------------------------------------------- */
+.screen {
+  min-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.center { align-items: center; justify-content: center; text-align: center; }
+.muted { color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 12px; max-width: 520px; width: 100%; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+h1 { font-size: 1.6rem; margin: 0; line-height: 1.2; }
+p { margin: 0; line-height: 1.4; }
+
+/* ---- confirmation ------------------------------------------------------ */
+.confirm { max-width: 720px; width: 100%; margin: 0 auto; }
+.confirm header { display: flex; flex-direction: column; gap: 6px; }
+.days { display: flex; gap: 8px; flex-wrap: wrap; }
+.days button { padding: 8px 14px; font-size: 0.95rem; }
+.days button[aria-current="true"] { border-color: var(--fg); }
+.blocks { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
+.blocks td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.blocks td.num { color: var(--muted); width: 2.2em; text-align: right; }
+.blocks td.dur { width: 5.5em; text-align: right; font-weight: 600; }
+.blocks td.watts { width: 7.5em; text-align: right; font-weight: 600; }
+.blocks .kind { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 50%; margin-right: 10px; vertical-align: 0; }
+.kind-work { background: var(--work); }
+.kind-recovery { background: var(--recovery); }
+.kind-warmup, .kind-cooldown { background: var(--easy); }
+.blocks .set { color: var(--muted); margin-left: 8px; }
+.notice { border: 1px solid var(--warn); color: var(--warn); border-radius: 12px; padding: 12px 14px; font-size: 0.95rem; }
+.notice ul { margin: 6px 0 0; padding-left: 20px; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+
+/* ---- ride -------------------------------------------------------------- */
+.ride {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  transition: background-color 300ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ride.work { background: var(--bg-work); }
+.ride.recovery { background: var(--bg-recovery); }
+.ride.warmup, .ride.cooldown { background: var(--bg-easy); }
+.ride .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(1.4rem, 5vmin, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.ride.work .top .label { color: var(--work); }
+.ride.recovery .top .label { color: var(--recovery); }
+.ride.warmup .top .label, .ride.cooldown .top .label { color: var(--easy); }
+.ride .main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 2vmin, 20px);
+}
+.ride .time {
+  font-size: clamp(6rem, 34vmin, 26rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+.ride .time.long { font-size: clamp(3.8rem, 22vmin, 17rem); }
+.ride .watts {
+  font-size: clamp(2.6rem, 13vmin, 9rem);
+  font-weight: 700;
+  line-height: 1;
+}
+.ride .watts small { font-size: 0.4em; font-weight: 600; color: var(--muted); margin-left: 0.15em; }
+.ride .next {
+  font-size: clamp(1.1rem, 3.8vmin, 2.2rem);
+  color: var(--muted);
+  text-align: center;
+  padding: 8px 0 14px;
+}
+.ride .next b { color: var(--fg); font-weight: 600; }
+.ride.paused .time { opacity: 0.5; }
+.progress { display: flex; gap: 2px; height: 10px; width: 100%; }
+.progress span { position: relative; height: 100%; background: var(--line); border-radius: 3px; overflow: hidden; }
+.progress span i { position: absolute; inset: 0; width: 0; background: var(--muted); }
+.progress span.done i { width: 100%; }
+.progress span.work i { background: var(--work); }
+.progress span.recovery i { background: var(--recovery); }
+.progress span.warmup i, .progress span.cooldown i { background: var(--easy); }
+.controls { display: flex; gap: 10px; justify-content: space-between; padding-top: 14px; }
+.controls button { flex: 1; padding: 14px 8px; font-size: 1rem; color: var(--muted); border-color: var(--line); }
+
+/* ---- done -------------------------------------------------------------- */
+.done .time { font-size: clamp(4rem, 20vmin, 12rem); font-weight: 800; }

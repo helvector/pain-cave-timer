@@ -5,7 +5,9 @@ schedules the session in TrainingPeaks; the nightly "Schedule for …" email
 is parsed into a flat list of blocks; the screen shows one thing at a time:
 zone, target watts, seconds remaining. Blocks auto-advance with an audio cue.
 
-Status: **parser and mail fetch done.** No UI yet.
+Status: **working end to end.** Parser, mail fetch, confirmation screen and
+full-screen timer. Open `/?demo=1` to try the UI with the redacted fixture and
+no mailbox.
 
 ## Layout
 
@@ -22,7 +24,10 @@ src/lib/workout/
   index.ts        parseTrainingPeaksEmail / parseWorkoutFromText / pickWorkout
 src/lib/workout/fetch-today.ts  newest emails → workout for a date
 src/lib/mail/           MailSource interface, env config, IMAP source (imapflow + mailparser)
-src/app/api/workout/    GET /api/workout?date=… behind a bearer token
+src/app/api/workout/    GET /api/workout?date=… behind a bearer token (?demo=1 serves the fixture)
+src/components/         App (token, load, phases) · Confirm (block list + warnings) · Ride (timer)
+src/lib/timer.ts        pure position/format helpers used by the ride screen
+src/lib/audio.ts        Web Audio cues: start, work, recovery, finish, 3-2-1 ticks
 scripts/parse.ts        CLI: print the block list for a saved email or text file
 scripts/fetch.ts        CLI: fetch today's workout from the mailbox using .env.local
 fixtures/               redacted samples used by tests; fixtures/raw/ is gitignored
