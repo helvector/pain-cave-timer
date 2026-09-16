@@ -21,3 +21,4 @@ fixtures/raw/
 *.log
 *.tsbuildinfo
 coverage/
+.vercel
