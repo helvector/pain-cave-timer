@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { mailConfigFromEnv, toMailMessage } from "../src/lib/mail";
+import { normaliseAppPassword } from "../src/lib/mail/env";
 import { fetchWorkoutFor } from "../src/lib/workout/fetch-today";
 import type { MailMessage, MailSource } from "../src/lib/mail/types";
 
@@ -47,6 +48,12 @@ describe("mailConfigFromEnv", () => {
       host: "imap.example.com", port: 993, secure: true, user: "u", password: "p",
       from: "messages-no-reply@trainingpeaks.com", folder: "INBOX",
     });
+  });
+  it("strips the display spaces from a Google App Password", () => {
+    expect(normaliseAppPassword("abcd efgh ijkl mnop")).toBe("abcdefghijklmnop");
+    expect(normaliseAppPassword("abcdefghijklmnop")).toBe("abcdefghijklmnop");
+    expect(normaliseAppPassword("my real pass word")).toBe("my real pass word");
+    expect(mailConfigFromEnv({ ...base, MAIL_PASSWORD: "abcd efgh ijkl mnop" }).password).toBe("abcdefghijklmnop");
   });
   it("fails loudly when a credential is missing", () => {
     expect(() => mailConfigFromEnv({ MAIL_HOST: "h", MAIL_USER: "u" })).toThrow(/MAIL_PASSWORD/);

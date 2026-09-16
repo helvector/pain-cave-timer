@@ -27,8 +27,17 @@ export function mailConfigFromEnv(env: Record<string, string | undefined> = proc
     port,
     secure: (env.MAIL_SECURE ?? "true").toLowerCase() !== "false",
     user: required("MAIL_USER"),
-    password: required("MAIL_PASSWORD"),
+    password: normaliseAppPassword(required("MAIL_PASSWORD")),
     from: env.MAIL_FROM?.trim() || "messages-no-reply@trainingpeaks.com",
     folder: env.MAIL_FOLDER?.trim() || "INBOX",
   };
+}
+
+/**
+ * Google shows App Passwords as four groups of four letters ("abcd efgh ijkl mnop").
+ * Gmail accepts them without the spaces; pasting them with spaces is a common
+ * source of "Invalid credentials". Only that exact shape is touched.
+ */
+export function normaliseAppPassword(value: string): string {
+  return /^[a-z]{4}( [a-z]{4}){3}$/i.test(value) ? value.replace(/ /g, "") : value;
 }
