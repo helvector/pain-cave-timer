@@ -22,3 +22,6 @@ fixtures/raw/
 *.tsbuildinfo
 coverage/
 .vercel
+
+# original font drop; the copy the app uses is src/fonts/
+Assets/

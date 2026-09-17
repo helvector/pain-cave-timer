@@ -71,7 +71,7 @@ input {
 .muted { color: var(--muted); }
 .stack { display: flex; flex-direction: column; gap: 12px; max-width: 520px; width: 100%; }
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-h1 { font-size: 1.6rem; margin: 0; line-height: 1.2; }
+h1 { font-size: 1.9rem; margin: 0; line-height: 1.1; font-family: var(--font-display), var(--font-ui), sans-serif; font-weight: 400; }
 p { margin: 0; line-height: 1.4; }
 
 /* ---- confirmation ------------------------------------------------------ */
@@ -83,8 +83,8 @@ p { margin: 0; line-height: 1.4; }
 .blocks { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
 .blocks td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: top; }
 .blocks td.num { color: var(--muted); width: 2.2em; text-align: right; }
-.blocks td.dur { width: 5.5em; text-align: right; font-weight: 600; }
-.blocks td.watts { width: 7.5em; text-align: right; font-weight: 600; }
+.blocks td.dur { width: 5.5em; text-align: right; font-weight: 600; white-space: nowrap; }
+.blocks td.watts { width: 7.5em; text-align: right; font-weight: 600; white-space: nowrap; }
 .blocks .kind { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 50%; margin-right: 10px; vertical-align: 0; }
 .kind-work { background: var(--work); }
 .kind-recovery { background: var(--recovery); }
@@ -96,7 +96,8 @@ p { margin: 0; line-height: 1.4; }
 
 /* ---- ride -------------------------------------------------------------- */
 .ride {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
@@ -108,13 +109,16 @@ p { margin: 0; line-height: 1.4; }
 .ride.work { background: var(--bg-work); }
 .ride.recovery { background: var(--bg-recovery); }
 .ride.warmup, .ride.cooldown { background: var(--bg-easy); }
+.ride .top, .ride .time, .ride .watts, .done .time {
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-weight: 400;
+}
 .ride .top {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: clamp(1.4rem, 5vmin, 3rem);
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: clamp(1.6rem, 6vmin, 3.6rem);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 .ride.work .top .label { color: var(--work); }
@@ -128,20 +132,22 @@ p { margin: 0; line-height: 1.4; }
   gap: clamp(4px, 2vmin, 20px);
 }
 .ride .time {
-  font-size: clamp(6rem, 34vmin, 26rem);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
+  /* 5 cells ≈ 1.3em wide: fill ~85% of the width in portrait, ~45% of the height in landscape. */
+  font-size: min(66vw, 44vh);
+  line-height: 0.9;
+  white-space: nowrap;
 }
-.ride .time.long { font-size: clamp(3.8rem, 22vmin, 17rem); }
+/* Fixed cells so proportional digits do not jitter as the clock counts down. */
+.time .d { display: inline-block; width: 0.29em; text-align: center; }
+.time .c { display: inline-block; width: 0.14em; text-align: center; }
+.ride .time.long { font-size: min(46vw, 30vh); }
 .ride .watts {
-  font-size: clamp(2.6rem, 13vmin, 9rem);
-  font-weight: 700;
+  font-size: min(24vw, 16vh);
   line-height: 1;
 }
-.ride .watts small { font-size: 0.4em; font-weight: 600; color: var(--muted); margin-left: 0.15em; }
+.ride .watts small { font-family: var(--font-ui), sans-serif; font-size: 0.32em; font-weight: 600; color: var(--muted); margin-left: 0.2em; }
 .ride .next {
-  font-size: clamp(1.1rem, 3.8vmin, 2.2rem);
+  font-size: clamp(1rem, 3.4vmin, 2.2rem);
   color: var(--muted);
   text-align: center;
   padding: 8px 0 14px;
@@ -159,4 +165,4 @@ p { margin: 0; line-height: 1.4; }
 .controls button { flex: 1; padding: 14px 8px; font-size: 1rem; color: var(--muted); border-color: var(--line); }
 
 /* ---- done -------------------------------------------------------------- */
-.done .time { font-size: clamp(4rem, 20vmin, 12rem); font-weight: 800; }
+.done .time { font-size: clamp(4rem, 20vmin, 12rem); }
