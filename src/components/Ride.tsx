@@ -17,6 +17,8 @@ interface Props {
   workout: Workout;
   onDone: (elapsedSec: number) => void;
   onExit: () => void;
+  /** Live heart rate when a sensor is connected; shown, never steered by. */
+  bpm?: number;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * so a throttled tab or a slow tick never drifts the schedule. Cues fire when
  * the block index changes; 3-2-1 ticks lead into every transition.
  */
-export function Ride({ workout, onDone, onExit }: Props) {
+export function Ride({ workout, onDone, onExit, bpm }: Props) {
   const cues = useMemo(() => new Cues(), []);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [pausedAt, setPausedAt] = useState<number | null>(null);
@@ -127,6 +129,11 @@ export function Ride({ workout, onDone, onExit }: Props) {
           </div>
         ) : (
           <div className="watts" style={{ fontSize: "clamp(1.6rem, 6vmin, 4rem)" }}>{b.target.raw || b.title}</div>
+        )}
+        {bpm !== undefined && (
+          <div className="hr" aria-label={`${bpm} beats per minute`}>
+            <span aria-hidden>♥</span> {bpm}
+          </div>
         )}
         {pausedAt !== null && <p className="muted" style={{ fontSize: "1.4rem" }}>Paused · tap to resume</p>}
       </div>

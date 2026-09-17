@@ -12,7 +12,7 @@ import { formatClock, parseTrainingPeaksEmail, parseWorkoutFromText, pickWorkout
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
 if (!file) {
-  console.error("usage: parse <file.html|file.eml|file.txt> [--ftp N] [--date yyyy-mm-dd] [--json]");
+  console.error("usage: parse <file.html|file.eml|file.txt> [--ftp N] [--thr N] [--date yyyy-mm-dd] [--json]");
   process.exit(2);
 }
 const opt = (name: string) => {
@@ -20,6 +20,7 @@ const opt = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const ftp = opt("ftp") ? Number(opt("ftp")) : undefined;
+const thr = opt("thr") ? Number(opt("thr")) : undefined;
 const json = args.includes("--json");
 const raw = readFileSync(file, "utf8");
 
@@ -34,12 +35,12 @@ if (/\.(html?|eml)$/i.test(file)) {
     const start = raw.search(/<html/i);
     html = start >= 0 ? raw.slice(start) : raw;
   }
-  const parsed = parseTrainingPeaksEmail(html, { ftp, subject });
+  const parsed = parseTrainingPeaksEmail(html, { ftp, thr, subject });
   emailWarnings = parsed.warnings;
   const date = opt("date");
   workouts = date ? [pickWorkout(parsed.days, date)].filter((w): w is Workout => Boolean(w)) : parsed.days;
 } else {
-  workouts = [parseWorkoutFromText(raw, { ftp })];
+  workouts = [parseWorkoutFromText(raw, { ftp, thr })];
 }
 
 if (json) {

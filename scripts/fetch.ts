@@ -20,10 +20,11 @@ const opt = (name: string) => {
 };
 const date = opt("date") ?? todayIn(appTimeZone());
 const ftp = process.env.FTP_WATTS ? Number(process.env.FTP_WATTS) : undefined;
+const thr = process.env.THR_BPM ? Number(process.env.THR_BPM) : undefined;
 
 async function main() {
   const source = createImapSource(mailConfigFromEnv());
-  const result = await fetchWorkoutFor(source, date, { ftp });
+  const result = await fetchWorkoutFor(source, date, { ftp, thr });
 
   if (args.includes("--json")) {
     console.log(JSON.stringify({ date, ...result }, null, 2));

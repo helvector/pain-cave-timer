@@ -2,7 +2,7 @@ import { parse as parseHtml, type HTMLElement } from "node-html-parser";
 import type { StepNode, WorkoutNode } from "./types";
 import { parseDuration } from "./duration";
 import { parseStepLine } from "./step";
-import type { TargetOptions } from "./target";
+import { parseHeartRateTarget, type TargetOptions } from "./target";
 
 /** One day's section of a TrainingPeaks "Schedule for …" email, before expansion. */
 export interface RawDay {
@@ -125,6 +125,10 @@ function parseList(ol: HTMLElement, day: RawDay, opts: TargetOptions): WorkoutNo
     const { step, leftovers } = parseStepLine(line, opts, title);
     if (step) {
       const node: StepNode = { ...step, notes: notes?.replace(/^notes?\s*[-:]?\s*/i, "") };
+      if (node.notes && !node.target.hrBpm && !node.target.hrPctThr) {
+        const hr = parseHeartRateTarget(node.notes, opts);
+        if (hr) node.target = { ...node.target, ...hr };
+      }
       nodes.push(node);
       day.unparsed.push(...leftovers.map((l) => `${title ?? ""}: ${l}`.trim()));
     } else {

@@ -16,14 +16,14 @@ export interface TodayResult {
  * `date`. The nightly email holds today and tomorrow, so the newest one
  * almost always answers; older ones cover a missed night.
  */
-export async function fetchWorkoutFor(source: MailSource, date: string, opts: { ftp?: number; limit?: number } = {}): Promise<TodayResult> {
+export async function fetchWorkoutFor(source: MailSource, date: string, opts: { ftp?: number; thr?: number; limit?: number } = {}): Promise<TodayResult> {
   const messages = await source.latest(opts.limit ?? 5);
   const warnings: string[] = [];
   const days: Workout[] = [];
   if (messages.length === 0) warnings.push("No workout emails found in the mailbox.");
 
   for (const m of messages) {
-    const parsed = parseTrainingPeaksEmail(m.html, { ftp: opts.ftp, subject: m.subject, receivedAt: m.receivedAt });
+    const parsed = parseTrainingPeaksEmail(m.html, { ftp: opts.ftp, thr: opts.thr, subject: m.subject, receivedAt: m.receivedAt });
     days.push(...parsed.days);
     const workout = pickWorkout(parsed.days, date);
     if (workout) {

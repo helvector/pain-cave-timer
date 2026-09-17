@@ -1,6 +1,6 @@
 import type { BlockKind, StepNode, Target } from "./types";
 import { parseDuration } from "./duration";
-import { parseCadence, parsePowerTarget, pctToWatts, type TargetOptions } from "./target";
+import { parseCadence, parseHeartRateTarget, parsePowerTarget, pctToWatts, type TargetOptions } from "./target";
 import { ftpPctForZones, topZone, ZONES, zoneCodesFor } from "./zones";
 
 /** Regex source for any duration spelling parseDuration accepts. */
@@ -77,6 +77,15 @@ export function parseStepLine(line: string, opts: TargetOptions = {}, title?: st
     leftovers.push(s);
   }
   if (!target.raw) target.raw = [rest, target.zone?.label].filter(Boolean).join(" - ");
+
+  // Heart-rate targets live in the notes ("Heart Rate: 84-92% of THR") or, for
+  // HR-based steps, in the target itself ("@ 140-150 bpm").
+  const hr = parseHeartRateTarget([notes ?? "", ...leftovers].join(" "), opts) ?? parseHeartRateTarget(rest.replace(/^/, "hr "), opts);
+  if (hr) {
+    Object.assign(target, hr);
+    const idx = leftovers.findIndex((l) => parseHeartRateTarget(`hr ${l}`, opts));
+    if (idx >= 0) leftovers.splice(idx, 1);
+  }
 
   return {
     step: { type: "step", title: stepTitle || undefined, durationSec, target, notes, raw },

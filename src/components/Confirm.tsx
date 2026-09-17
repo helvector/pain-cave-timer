@@ -4,6 +4,7 @@ import type { Workout } from "@/lib/workout/types";
 import { clock, wattsLabel, zoneLabel } from "@/lib/timer";
 import { Fades } from "@/components/animate-ui/primitives/effects/fade";
 import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/primitives/buttons/ripple";
+import type { HeartRateState } from "@/hooks/use-heart-rate";
 
 interface Props {
   result: { date: string; days: Workout[]; warnings: string[]; demo?: boolean; email?: { subject: string } };
@@ -11,6 +12,7 @@ interface Props {
   onSelect: (w: Workout) => void;
   onStart: () => void;
   onReload: () => void;
+  heartRate: HeartRateState;
 }
 
 function niceDate(iso: string): string {
@@ -19,7 +21,7 @@ function niceDate(iso: string): string {
 }
 
 /** One screen, read once, then Start. Everything the parser was unsure about is shown here. */
-export function Confirm({ result, selected, onSelect, onStart, onReload }: Props) {
+export function Confirm({ result, selected, onSelect, onStart, onReload, heartRate }: Props) {
   const days = Array.from(new Map(result.days.map((d) => [d.date, d])).values()).sort((a, b) => a.date.localeCompare(b.date));
   const w = selected;
   const issues = [...w.warnings, ...w.unparsed.map((u) => `Not understood: ${u}`), ...result.warnings];
@@ -78,6 +80,8 @@ export function Confirm({ result, selected, onSelect, onStart, onReload }: Props
           </table>
         )}
 
+        <HeartRateRow hr={heartRate} />
+
         <div className="actions">
           {!w.isRestDay && (
             <RippleButton className="primary" onClick={onStart} hoverScale={1.03} tapScale={0.96}>
@@ -91,5 +95,31 @@ export function Confirm({ result, selected, onSelect, onStart, onReload }: Props
         </Fades>
       </div>
     </main>
+  );
+}
+
+/** Optional live heart rate: a readout, not a target. Whoop needs Broadcast Heart Rate on. */
+function HeartRateRow({ hr }: { hr: HeartRateState }) {
+  if (hr.status === "unsupported") {
+    return (
+      <p className="muted hr-row">
+        Heart rate needs Web Bluetooth: Chrome or Edge on a computer or Android, or the Bluefy browser on iPhone.
+      </p>
+    );
+  }
+  const live = hr.status === "connected";
+  return (
+    <div className="row hr-row">
+      <span className={live ? "" : "muted"}>
+        <span aria-hidden>♥</span> {live ? (hr.bpm ?? "—") : hr.status === "reconnecting" ? "reconnecting…" : hr.status === "connecting" ? "connecting…" : "not connected"}
+        {live && hr.name ? <span className="muted"> · {hr.name}</span> : null}
+      </span>
+      {hr.status === "idle" ? (
+        <button onClick={hr.connect}>Connect Whoop</button>
+      ) : (
+        <button onClick={hr.disconnect} disabled={hr.status === "connecting"}>Disconnect</button>
+      )}
+      {hr.error && <span className="muted">{hr.error}</span>}
+    </div>
   );
 }
