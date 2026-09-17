@@ -4,6 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
 import { clock, positionAt, wattsLabel, zoneLabel } from "@/lib/timer";
+import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
+import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
+import { Blur } from "@/components/animate-ui/primitives/effects/blur";
+
+/** Quick, non-bouncy spring for digits that change every second. */
+const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
+/** Watts settle in about half a second on a block change. */
+const WATTS_SPRING = { stiffness: 140, damping: 28 };
 
 interface Props {
   workout: Workout;
@@ -96,35 +104,40 @@ export function Ride({ workout, onDone, onExit }: Props) {
   }, [workout.blocks, pausedAt]);
 
   const b = pos.block;
-  const watts = wattsLabel(b);
   const next = pos.next;
 
   return (
     <main className={`ride ${b.kind}${pausedAt !== null ? " paused" : ""}`}>
-      <div className="top">
+      <Blur key={`top-${pos.index}`} className="top" initialBlur={8} transition={{ duration: 0.35 }}>
         <span className="label">{zoneLabel(b)}</span>
         <span>{b.set ? `${b.set.index} of ${b.set.count}` : `${pos.index + 1} / ${workout.blocks.length}`}</span>
-      </div>
+      </Blur>
 
       <div className="main" onClick={togglePause} role="button" aria-label={pausedAt !== null ? "Resume" : "Pause"}>
         <div className={`time${pos.remainingSec >= 3600 ? " long" : ""}`} aria-label={clock(pos.remainingSec)}>
-          <Digits text={clock(pos.remainingSec)} />
+          <RollingClock sec={pos.remainingSec} />
         </div>
-        {watts ? (
-          <div className="watts">{watts}<small>W</small></div>
+        {b.target.watts ? (
+          <div className="watts">
+            <CountingNumber number={b.target.watts.lo} initiallyStable transition={WATTS_SPRING} />
+            {b.target.watts.hi !== b.target.watts.lo && (
+              <>–<CountingNumber number={b.target.watts.hi} initiallyStable transition={WATTS_SPRING} /></>
+            )}
+            <small>W</small>
+          </div>
         ) : (
           <div className="watts" style={{ fontSize: "clamp(1.6rem, 6vmin, 4rem)" }}>{b.target.raw || b.title}</div>
         )}
         {pausedAt !== null && <p className="muted" style={{ fontSize: "1.4rem" }}>Paused · tap to resume</p>}
       </div>
 
-      <div className="next">
+      <Blur key={`next-${pos.index}`} className="next" initialBlur={8} delay={0.1} transition={{ duration: 0.35 }}>
         {next ? (
           <>Next <b>{zoneLabel(next)}</b> · {clock(next.durationSec)}{wattsLabel(next) ? <> · <b>{wattsLabel(next)} W</b></> : null}</>
         ) : (
           <>Last block · {clock(workout.totalSec - elapsedSec)} to go</>
         )}
-      </div>
+      </Blur>
 
       <div>
         <div className="progress" aria-hidden>
@@ -149,13 +162,31 @@ export function Ride({ workout, onDone, onExit }: Props) {
   );
 }
 
-/** Each digit in an equal-width cell, so the number never shifts as it counts. */
-function Digits({ text }: { text: string }) {
+/**
+ * m:ss (or h:mm:ss) with each digit on its own roller, so a change rolls the
+ * digit rather than swapping it. Every roller is a fixed-width cell, which
+ * keeps the proportional Balfron figures from shifting the number.
+ */
+function RollingClock({ sec }: { sec: number }) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const digits = (n: number, pad: number) => String(n).padStart(pad, "0").split("").map(Number);
+  const cells = [
+    ...(h ? [...digits(h, 1), ":"] : []),
+    ...digits(m, h ? 2 : 1),
+    ":",
+    ...digits(s, 2),
+  ];
   return (
     <>
-      {Array.from(text).map((ch, i) => (
-        <span key={i} className={/\d/.test(ch) ? "d" : "c"} aria-hidden>{ch}</span>
-      ))}
+      {cells.map((c, i) =>
+        typeof c === "number" ? (
+          <SlidingNumber key={i} number={c} initiallyStable transition={DIGIT_SPRING} className="d" aria-hidden />
+        ) : (
+          <span key={i} className="c" aria-hidden>{c}</span>
+        ),
+      )}
     </>
   );
 }

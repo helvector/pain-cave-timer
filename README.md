@@ -83,12 +83,24 @@ npm run fetch
 npm run fetch -- --date 2026-09-10 --json
 ```
 
+## Motion
+
+Animations come from [Animate UI](https://animate-ui.com) primitives copied
+into `src/components/animate-ui/` (the registry's manual install; they need
+only Motion, not Tailwind). Used: SlidingNumber for the rolling countdown
+digits, CountingNumber for watts on a block change, Blur for the zone label
+and next-up line on transitions, Fades to stagger the confirmation screen in,
+and RippleButton for Start. `MotionConfig reducedMotion="user"` disables them
+when the OS asks for reduced motion. That directory is excluded from lint.
+
 ## Typeface
 
 Display sizes (countdown, watts, labels, titles) use II Balfron by Evan
 Lelliott / Increments Type Foundry, loaded from `src/fonts/` with
 `next/font/local`. Its figures are proportional, so the countdown renders each
-digit in a fixed-width cell to stop the number shifting as it counts. Reading
+digit in a fixed-width cell (0.27em, its typical digit advance) to stop the
+number shifting as it counts, and the narrow "1" is nudged onto its optical
+centre. Reading
 text uses Inter with tabular figures. Check the Balfron licence permits web
 embedding and redistribution before making this repository public.
 

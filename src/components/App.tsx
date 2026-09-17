@@ -5,6 +5,7 @@ import type { Workout } from "@/lib/workout/types";
 import { Confirm } from "./Confirm";
 import { Ride } from "./Ride";
 import { clock } from "@/lib/timer";
+import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 
 const TOKEN_KEY = "pct.token";
 
@@ -142,12 +143,12 @@ export function App() {
 
   return (
     <main className="screen center done">
-      <div className="stack" style={{ alignItems: "center" }}>
+      <Fade className="stack" style={{ alignItems: "center" }} initialOpacity={0} transition={{ duration: 0.4 }}>
         <p className="muted">Done</p>
         <div className="time">{clock(phase.elapsedSec)}</div>
         <h1>{phase.workout.title}</h1>
         <button className="primary" onClick={reload}>Back to today</button>
-      </div>
+      </Fade>
     </main>
   );
 }
