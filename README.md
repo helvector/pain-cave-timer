@@ -83,6 +83,20 @@ npm run fetch
 npm run fetch -- --date 2026-09-10 --json
 ```
 
+## Heart rate
+
+Optional readout, not a target. Turn on **Broadcast Heart Rate** in the Whoop
+app, tap **Connect Whoop** on the confirmation screen, pick the strap in the
+browser's device picker, and the ride screen shows live BPM under the watts.
+Uses Web Bluetooth (`src/lib/heart-rate.ts`, `src/hooks/use-heart-rate.ts`),
+so it works in Chrome/Edge on macOS, Windows and Android, and in the Bluefy
+browser on iPhone; Safari has no Web Bluetooth. Readings go stale after 8 s
+without a notification and the client retries a dropped link five times.
+
+If `THR_BPM` is set, the coach's "Heart Rate: 84-92% of THR" notes are
+resolved to a BPM range on each block (`target.hrBpm`) for anything that
+wants it later; the UI does not colour the readout against it.
+
 ## Motion
 
 Animations come from [Animate UI](https://animate-ui.com) primitives copied

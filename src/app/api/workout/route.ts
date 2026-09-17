@@ -22,10 +22,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "date must be yyyy-mm-dd" }, { status: 400 });
   }
   const date = dateParam ?? todayIn(appTimeZone());
+  const ftp = process.env.FTP_WATTS ? Number(process.env.FTP_WATTS) : undefined;
+  const thr = process.env.THR_BPM ? Number(process.env.THR_BPM) : undefined;
 
   // Demo mode: the redacted fixture, no mailbox, no token. Nothing private in it.
   if (req.nextUrl.searchParams.get("demo") === "1") {
-    const days = demoWorkouts(date);
+    const days = demoWorkouts(date, { ftp, thr });
     return NextResponse.json({ date, workout: pickWorkout(days, date), days, warnings: [], demo: true });
   }
 
@@ -34,11 +36,10 @@ export async function GET(req: NextRequest) {
   const provided = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (provided !== token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const ftp = process.env.FTP_WATTS ? Number(process.env.FTP_WATTS) : undefined;
 
   try {
     const source = createImapSource(mailConfigFromEnv());
-    const result = await fetchWorkoutFor(source, date, { ftp });
+    const result = await fetchWorkoutFor(source, date, { ftp, thr });
     return NextResponse.json({ date, ...result }, { status: result.workout ? 200 : 404 });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

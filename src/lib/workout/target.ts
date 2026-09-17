@@ -4,6 +4,8 @@ import { ftpPctForZones, zoneCodesFor } from "./zones";
 export interface TargetOptions {
   /** Athlete FTP in watts. Used to resolve %FTP and zone-only targets. */
   ftp?: number;
+  /** Athlete threshold heart rate in BPM. Used to resolve "% of THR" targets. */
+  thr?: number;
 }
 
 function range(lo: string, hi?: string): Range {
@@ -59,4 +61,21 @@ export function parseCadence(text: string): Range | undefined {
   const m = text.trim().toLowerCase().match(new RegExp(String.raw`^(?:${RANGE})\s*rpm$`));
   if (!m) return undefined;
   return m[1] !== undefined ? range(m[1], m[2]) : range(m[3]);
+}
+
+/**
+ * Pull a heart-rate target out of free text such as
+ * "RPE: 7-8 Heart Rate: 93-96% of THR" or "HR 140-150 bpm".
+ * Returns undefined when there is none.
+ */
+export function parseHeartRateTarget(text: string, opts: TargetOptions = {}): Pick<Target, "hrPctThr" | "hrBpm"> | undefined {
+  const s = text.toLowerCase();
+  const pct = s.match(new RegExp(String.raw`(?:heart\s*rate|hr)\s*:?\s*(?:${RANGE})\s*%\s*(?:of\s*)?(?:thr|lthr|threshold)`));
+  if (pct) {
+    const r = pct[1] !== undefined ? range(pct[1], pct[2]) : range(pct[3]);
+    return { hrPctThr: r, hrBpm: opts.thr ? pctToWatts(r, opts.thr) : undefined };
+  }
+  const bpm = s.match(new RegExp(String.raw`(?:heart\s*rate|hr)\s*:?\s*(?:${RANGE})\s*bpm`));
+  if (bpm) return { hrBpm: bpm[1] !== undefined ? range(bpm[1], bpm[2]) : range(bpm[3]) };
+  return undefined;
 }

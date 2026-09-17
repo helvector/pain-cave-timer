@@ -35,6 +35,10 @@ export interface Target {
   /** Zone label as written ("Tempo-Threshold") plus the codes it spans. */
   zone?: { label: string; codes: ZoneCode[] };
   cadenceRpm?: Range;
+  /** Heart-rate target as a percentage of threshold HR, when the coach gives one. */
+  hrPctThr?: Range;
+  /** Heart-rate target in BPM: written absolutely, or resolved from %THR when a threshold is supplied. */
+  hrBpm?: Range;
 }
 
 export interface Block {

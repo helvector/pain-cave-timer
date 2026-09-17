@@ -14,6 +14,8 @@ export { extractDays, resolveDate } from "./email-html";
 export interface ParseOptions {
   /** Athlete FTP in watts, for %FTP or zone-only targets. */
   ftp?: number;
+  /** Athlete threshold heart rate in BPM, for "% of THR" targets. */
+  thr?: number;
   subject?: string;
   receivedAt?: Date;
 }
@@ -42,7 +44,7 @@ export function assembleWorkout(
 /** Parse a TrainingPeaks "Schedule for …" email (HTML body) into per-day workouts. */
 export function parseTrainingPeaksEmail(html: string, opts: ParseOptions = {}): ParsedEmail {
   const warnings: string[] = [];
-  const days = extractDays(html, { ftp: opts.ftp }).map((d) => {
+  const days = extractDays(html, { ftp: opts.ftp, thr: opts.thr }).map((d) => {
     const date = resolveDate(d.dateText, opts.subject, opts.receivedAt);
     if (!date) warnings.push(`Could not work out the date for "${d.dateText}".`);
     return assembleWorkout(d.nodes, {
@@ -62,7 +64,7 @@ export function parseTrainingPeaksEmail(html: string, opts: ParseOptions = {}): 
 
 /** Parse pasted / typed workout text (one workout) into a Workout. */
 export function parseWorkoutFromText(text: string, opts: ParseOptions & { title?: string; date?: string } = {}): Workout {
-  const { nodes, unparsed } = parseWorkoutText(text, { ftp: opts.ftp });
+  const { nodes, unparsed } = parseWorkoutText(text, { ftp: opts.ftp, thr: opts.thr });
   return assembleWorkout(nodes, {
     date: opts.date ?? new Date().toISOString().slice(0, 10),
     title: opts.title ?? "Workout",

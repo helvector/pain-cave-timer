@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCadence, parsePowerTarget } from "../src/lib/workout/target";
+import { parseCadence, parseHeartRateTarget, parsePowerTarget } from "../src/lib/workout/target";
 
 describe("parsePowerTarget", () => {
   it("absolute watts", () => {
@@ -27,4 +27,19 @@ describe("parsePowerTarget", () => {
 
 describe("parseCadence", () => {
   it("parses rpm", () => expect(parseCadence("80-95 rpm")).toEqual({ lo: 80, hi: 95 }));
+});
+
+describe("parseHeartRateTarget", () => {
+  it("reads %THR from notes and resolves with a threshold", () => {
+    const t = parseHeartRateTarget("RPE: 7-8 Heart Rate: 93-96% of THR", { thr: 160 });
+    expect(t?.hrPctThr).toEqual({ lo: 93, hi: 96 });
+    expect(t?.hrBpm).toEqual({ lo: 149, hi: 154 });
+    expect(parseHeartRateTarget("Heart Rate: 84-92% of THR")?.hrBpm).toBeUndefined();
+  });
+  it("reads absolute bpm", () => {
+    expect(parseHeartRateTarget("hr 140-150 bpm")?.hrBpm).toEqual({ lo: 140, hi: 150 });
+  });
+  it("ignores text without a heart-rate target", () => {
+    expect(parseHeartRateTarget("Power: 88-94% of FTP")).toBeUndefined();
+  });
 });

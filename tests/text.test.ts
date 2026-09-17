@@ -21,10 +21,11 @@ describe("parseStepLine", () => {
     expect(parseStepLine("1 min on").step?.title).toBe("on");
     expect(parseStepLine("1 min off").step?.title).toBe("off");
   });
-  it("reports what it cannot read", () => {
+  it("takes a heart-rate step as its own target", () => {
     const { step, leftovers } = parseStepLine("5 min @ 140-150 bpm");
     expect(step?.durationSec).toBe(300);
-    expect(leftovers).toEqual(["140-150 bpm"]);
+    expect(step?.target.hrBpm).toEqual({ lo: 140, hi: 150 });
+    expect(leftovers).toEqual([]);
     expect(parseStepLine("Just ride").step).toBeUndefined();
   });
 });

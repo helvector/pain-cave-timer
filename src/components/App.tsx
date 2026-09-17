@@ -6,6 +6,7 @@ import { Confirm } from "./Confirm";
 import { Ride } from "./Ride";
 import { clock } from "@/lib/timer";
 import { Fade } from "@/components/animate-ui/primitives/effects/fade";
+import { useHeartRate } from "@/hooks/use-heart-rate";
 
 const TOKEN_KEY = "pct.token";
 
@@ -34,6 +35,7 @@ function readToken(): string {
 export function App() {
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [tokenInput, setTokenInput] = useState("");
+  const heartRate = useHeartRate();
 
   const params = useMemo(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)), []);
   const demo = params.get("demo") === "1";
@@ -127,6 +129,7 @@ export function App() {
         onSelect={(w) => setPhase({ name: "confirm", result: phase.result, selected: w })}
         onStart={() => setPhase({ name: "ride", workout: phase.selected })}
         onReload={reload}
+        heartRate={heartRate}
       />
     );
   }
@@ -135,6 +138,7 @@ export function App() {
     return (
       <Ride
         workout={phase.workout}
+        bpm={heartRate.status === "connected" ? heartRate.bpm : undefined}
         onDone={(elapsedSec) => setPhase({ name: "done", workout: phase.workout, elapsedSec })}
         onExit={reload}
       />

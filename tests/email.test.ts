@@ -46,6 +46,13 @@ describe("parseTrainingPeaksEmail", () => {
     expect(sets).toEqual(["", "1/3", "1/3", "2/3", "2/3", "3/3", ""]);
   });
 
+  it("resolves heart-rate targets from the notes when a threshold is given", () => {
+    const b = parseTrainingPeaksEmail(html, { subject, thr: 160 }).days[0].blocks[1];
+    expect(b.target.hrPctThr).toEqual({ lo: 93, hi: 96 });
+    expect(b.target.hrBpm).toEqual({ lo: 149, hi: 154 });
+    expect(parsed.days[0].blocks[0].target.hrPctThr).toBeUndefined();
+  });
+
   it("keeps zone, cadence and notes", () => {
     const b = parsed.days[0].blocks[1];
     expect(b.title).toBe("Active");
