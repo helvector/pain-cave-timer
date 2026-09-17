@@ -41,6 +41,8 @@ button {
 }
 button:disabled { opacity: 0.4; cursor: default; }
 button.primary {
+  position: relative;
+  overflow: hidden;
   background: var(--fg);
   color: var(--bg);
   border-color: var(--fg);
@@ -134,12 +136,23 @@ p { margin: 0; line-height: 1.4; }
 .ride .time {
   /* 5 cells ≈ 1.3em wide: fill ~85% of the width in portrait, ~45% of the height in landscape. */
   font-size: min(66vw, 44vh);
-  line-height: 0.9;
+  line-height: 1;
   white-space: nowrap;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-/* Fixed cells so proportional digits do not jitter as the clock counts down. */
-.time .d { display: inline-block; width: 0.29em; text-align: center; }
-.time .c { display: inline-block; width: 0.14em; text-align: center; }
+/*
+ * Fixed cells so proportional digits do not jitter as the clock counts down.
+ * Cell width matches Balfron's typical digit advance (0.27em; ink ≈ 0.22em).
+ * The "1" is only 0.14em of ink with its centre 0.014em left of its advance
+ * centre, so it gets nudged right to sit on its optical centre. Inside each
+ * roller the first child is a hidden "0" placeholder, then digits 0–9, so the
+ * "1" is the third child.
+ */
+.time .c { display: inline-block; width: 0.13em; text-align: center; }
+.time [data-slot="sliding-number-roller"] { width: 0.27em !important; }
+.time [data-slot="sliding-number-roller"] > span:nth-child(3) { padding-left: 0.03em; }
 .ride .time.long { font-size: min(46vw, 30vh); }
 .ride .watts {
   font-size: min(24vw, 16vh);
@@ -156,7 +169,7 @@ p { margin: 0; line-height: 1.4; }
 .ride.paused .time { opacity: 0.5; }
 .progress { display: flex; gap: 2px; height: 10px; width: 100%; }
 .progress span { position: relative; height: 100%; background: var(--line); border-radius: 3px; overflow: hidden; }
-.progress span i { position: absolute; inset: 0; width: 0; background: var(--muted); }
+.progress span i { position: absolute; inset: 0; width: 0; background: var(--muted); transition: width 150ms linear; }
 .progress span.done i { width: 100%; }
 .progress span.work i { background: var(--work); }
 .progress span.recovery i { background: var(--recovery); }

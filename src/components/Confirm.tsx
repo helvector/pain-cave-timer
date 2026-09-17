@@ -2,6 +2,8 @@
 
 import type { Workout } from "@/lib/workout/types";
 import { clock, wattsLabel, zoneLabel } from "@/lib/timer";
+import { Fades } from "@/components/animate-ui/primitives/effects/fade";
+import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/primitives/buttons/ripple";
 
 interface Props {
   result: { date: string; days: Workout[]; warnings: string[]; demo?: boolean; email?: { subject: string } };
@@ -25,6 +27,7 @@ export function Confirm({ result, selected, onSelect, onStart, onReload }: Props
   return (
     <main className="screen">
       <div className="confirm stack" style={{ maxWidth: 720 }}>
+        <Fades key={w.date} holdDelay={0.06} initialOpacity={0} transition={{ duration: 0.3 }}>
         <header>
           <p className="muted">
             {niceDate(w.date)}
@@ -40,22 +43,18 @@ export function Confirm({ result, selected, onSelect, onStart, onReload }: Props
           )}
         </header>
 
-        {days.length > 1 && (
-          <div className="days" role="tablist" aria-label="Days">
-            {days.map((d) => (
+        <div className="days" role="tablist" aria-label="Days" hidden={days.length < 2}>
+          {days.map((d) => (
               <button key={d.date} role="tab" aria-current={d.date === w.date} onClick={() => onSelect(d)}>
                 {niceDate(d.date)}{d.isRestDay ? " · rest" : ""}
               </button>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
 
-        {issues.length > 0 && (
-          <div className="notice" role="alert">
-            Check before you start:
-            <ul>{issues.map((m, i) => <li key={i}>{m}</li>)}</ul>
-          </div>
-        )}
+        <div className="notice" role="alert" hidden={issues.length === 0}>
+          Check before you start:
+          <ul>{issues.map((m, i) => <li key={i}>{m}</li>)}</ul>
+        </div>
 
         {w.isRestDay ? (
           <p>Rest day. Nothing to ride.</p>
@@ -80,10 +79,16 @@ export function Confirm({ result, selected, onSelect, onStart, onReload }: Props
         )}
 
         <div className="actions">
-          {!w.isRestDay && <button className="primary" onClick={onStart}>Start</button>}
+          {!w.isRestDay && (
+            <RippleButton className="primary" onClick={onStart} hoverScale={1.03} tapScale={0.96}>
+              Start
+              <RippleButtonRipples color="rgba(0, 0, 0, 0.25)" />
+            </RippleButton>
+          )}
           <button onClick={onReload}>Reload</button>
         </div>
-        {w.description && <p className="muted" style={{ whiteSpace: "pre-line", fontSize: "0.9rem" }}>{w.description}</p>}
+        <p className="muted" style={{ whiteSpace: "pre-line", fontSize: "0.9rem" }} hidden={!w.description}>{w.description}</p>
+        </Fades>
       </div>
     </main>
   );

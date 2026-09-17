@@ -20,10 +20,12 @@
   "dependencies": {
     "imapflow": "^2.0.5",
     "mailparser": "^3.9.28",
+    "motion": "^13.4.0",
     "next": "16.3.5",
     "node-html-parser": "^7.0.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-use-measure": "^2.1.7"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6",
