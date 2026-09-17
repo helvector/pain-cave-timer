@@ -31,6 +31,7 @@ export function Ride({ workout, onDone, onExit }: Props) {
 
   // Unlock audio, go fullscreen, keep the screen awake. All from the Start tap.
   useEffect(() => {
+    window.scrollTo(0, 0);
     void cues.unlock().then(() => cues.play("start"));
     document.documentElement.requestFullscreen?.().catch(() => undefined);
     const lock = async () => {
@@ -106,7 +107,9 @@ export function Ride({ workout, onDone, onExit }: Props) {
       </div>
 
       <div className="main" onClick={togglePause} role="button" aria-label={pausedAt !== null ? "Resume" : "Pause"}>
-        <div className={`time${pos.remainingSec >= 3600 ? " long" : ""}`} aria-live="off">{clock(pos.remainingSec)}</div>
+        <div className={`time${pos.remainingSec >= 3600 ? " long" : ""}`} aria-label={clock(pos.remainingSec)}>
+          <Digits text={clock(pos.remainingSec)} />
+        </div>
         {watts ? (
           <div className="watts">{watts}<small>W</small></div>
         ) : (
@@ -143,5 +146,16 @@ export function Ride({ workout, onDone, onExit }: Props) {
         </div>
       </div>
     </main>
+  );
+}
+
+/** Each digit in an equal-width cell, so the number never shifts as it counts. */
+function Digits({ text }: { text: string }) {
+  return (
+    <>
+      {Array.from(text).map((ch, i) => (
+        <span key={i} className={/\d/.test(ch) ? "d" : "c"} aria-hidden>{ch}</span>
+      ))}
+    </>
   );
 }

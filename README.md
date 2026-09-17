@@ -83,6 +83,15 @@ npm run fetch
 npm run fetch -- --date 2026-09-10 --json
 ```
 
+## Typeface
+
+Display sizes (countdown, watts, labels, titles) use II Balfron by Evan
+Lelliott / Increments Type Foundry, loaded from `src/fonts/` with
+`next/font/local`. Its figures are proportional, so the countdown renders each
+digit in a fixed-width cell to stop the number shifting as it counts. Reading
+text uses Inter with tabular figures. Check the Balfron licence permits web
+embedding and redistribution before making this repository public.
+
 ## Secrets
 
 None in the repo. Mailbox settings and tokens live in Vercel environment
