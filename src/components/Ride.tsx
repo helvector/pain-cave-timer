@@ -7,6 +7,7 @@ import { clock, positionAt, wattsLabel, zoneLabel } from "@/lib/timer";
 import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
+import { RideBackground } from "./RideBackground";
 
 /** Quick, non-bouncy spring for digits that change every second. */
 const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
@@ -110,6 +111,7 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
 
   return (
     <main className={`ride ${b.kind}${pausedAt !== null ? " paused" : ""}`}>
+      <RideBackground kind={b.kind} bpm={bpm} />
       <Blur key={`top-${pos.index}`} className="top" initialBlur={8} transition={{ duration: 0.35 }}>
         <span className="label">{zoneLabel(b)}</span>
         <span>{b.set ? `${b.set.index} of ${b.set.count}` : `${pos.index + 1} / ${workout.blocks.length}`}</span>
@@ -130,11 +132,6 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
         ) : (
           <div className="watts" style={{ fontSize: "clamp(1.6rem, 6vmin, 4rem)" }}>{b.target.raw || b.title}</div>
         )}
-        {bpm !== undefined && (
-          <div className="hr" aria-label={`${bpm} beats per minute`}>
-            <span aria-hidden>♥</span> {bpm}
-          </div>
-        )}
         {pausedAt !== null && <p className="muted" style={{ fontSize: "1.4rem" }}>Paused · tap to resume</p>}
       </div>
 
@@ -147,6 +144,11 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
       </Blur>
 
       <div>
+        {bpm !== undefined && (
+          <div className="hr" aria-label={`${bpm} beats per minute`}>
+            <span aria-hidden>♥</span> {bpm}
+          </div>
+        )}
         <div className="progress" aria-hidden>
           {workout.blocks.map((blk) => {
             const state = blk.index < pos.index ? "done" : blk.index === pos.index ? "current" : "";

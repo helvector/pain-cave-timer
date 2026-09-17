@@ -37,8 +37,18 @@ export function App() {
   const [tokenInput, setTokenInput] = useState("");
   const heartRate = useHeartRate();
 
+
   const params = useMemo(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)), []);
   const demo = params.get("demo") === "1";
+  // Demo only: ?bpm=142 simulates a connected strap so the pulse can be previewed.
+  const demoBpm = demo && params.get("bpm") ? Number(params.get("bpm")) : undefined;
+  const [simBpm, setSimBpm] = useState<number>();
+  useEffect(() => {
+    if (!demoBpm) return;
+    const id = setInterval(() => setSimBpm(demoBpm + Math.round((Math.random() - 0.5) * 6)), 2000);
+    return () => clearInterval(id);
+  }, [demoBpm]);
+  const liveBpm = demoBpm ? (simBpm ?? demoBpm) : heartRate.status === "connected" ? heartRate.bpm : undefined;
 
   const load = useCallback(async () => {
     const token = readToken();
@@ -138,7 +148,7 @@ export function App() {
     return (
       <Ride
         workout={phase.workout}
-        bpm={heartRate.status === "connected" ? heartRate.bpm : undefined}
+        bpm={liveBpm}
         onDone={(elapsedSec) => setPhase({ name: "done", workout: phase.workout, elapsedSec })}
         onExit={reload}
       />
