@@ -97,6 +97,18 @@ If `THR_BPM` is set, the coach's "Heart Rate: 84-92% of THR" notes are
 resolved to a BPM range on each block (`target.hrBpm`) for anything that
 wants it later; the UI does not colour the readout against it.
 
+## Living background
+
+The ride screen sits on Animate UI's Bubble Background, ported to plain CSS
+in `src/components/animate-ui/components/backgrounds/bubble.tsx` and wrapped by
+`RideBackground`. Blob colours follow the block's intensity (work reds,
+recovery blues, warm-up/cool-down greys) at reduced opacity so the numerals
+keep their contrast, and the whole field pulses once per heartbeat: the CSS
+animation period is 60 / BPM, so a changing rate re-times the loop without
+restarting it. With no strap it breathes slowly. The BPM readout sits bottom
+left above the progress bar. Preview without a strap: `/?demo=1&bpm=142`.
+Reduced-motion users get the flat tint.
+
 ## Motion
 
 Animations come from [Animate UI](https://animate-ui.com) primitives copied

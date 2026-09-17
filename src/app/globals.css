@@ -108,6 +108,7 @@ p { margin: 0; line-height: 1.4; }
   user-select: none;
   -webkit-user-select: none;
 }
+.ride > * { position: relative; z-index: 1; }
 .ride.work { background: var(--bg-work); }
 .ride.recovery { background: var(--bg-recovery); }
 .ride.warmup, .ride.cooldown { background: var(--bg-easy); }
@@ -161,12 +162,13 @@ p { margin: 0; line-height: 1.4; }
 .ride .watts small { font-family: var(--font-ui), sans-serif; font-size: 0.32em; font-weight: 600; color: var(--muted); margin-left: 0.2em; }
 .ride .hr {
   font-family: var(--font-ui), sans-serif;
-  font-size: clamp(1.4rem, 6vmin, 3.4rem);
+  font-size: clamp(1.1rem, 3.6vmin, 2.2rem);
   font-weight: 600;
   color: var(--muted);
-  margin-top: clamp(4px, 1.5vmin, 14px);
+  padding: 0 2px 8px;
 }
-.ride .hr span { color: var(--work); font-size: 0.8em; }
+.ride .hr span { color: var(--work); font-size: 0.85em; animation: beat var(--beat, 5s) ease-in-out infinite; display: inline-block; }
+.ride.recovery .hr span { color: var(--recovery); }
 .hr-row { font-size: 1.05rem; }
 .hr-row button { padding: 10px 16px; font-size: 0.95rem; }
 .ride .next {
@@ -189,3 +191,60 @@ p { margin: 0; line-height: 1.4; }
 
 /* ---- done -------------------------------------------------------------- */
 .done .time { font-size: clamp(4rem, 20vmin, 12rem); }
+
+/* ---- living background (Animate UI bubbles, pulsed at heart rate) ------- */
+.ride-bg {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0 !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ride-bg__bubbles {
+  opacity: 0.55;
+  transform-origin: 50% 60%;
+  animation: pulse var(--beat, 5s) ease-in-out infinite;
+  transition: opacity 600ms ease;
+}
+@keyframes pulse {
+  0%   { transform: scale(1); opacity: 0.5; }
+  18%  { transform: scale(1.035); opacity: 0.62; }
+  40%  { transform: scale(1.005); opacity: 0.55; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+@keyframes beat {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(1.25); }
+  40%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Bubble Background port: same geometry as the Tailwind original. */
+.bubble-bg { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.bubble-bg__defs { position: absolute; top: 0; left: 0; width: 0; height: 0; }
+.bubble-bg__layer { position: absolute; inset: 0; filter: url(#bubble-goo) blur(40px); }
+.bubble-bg__blob {
+  position: absolute;
+  border-radius: 50%;
+  width: 80%;
+  height: 80%;
+  top: 10%;
+  left: 10%;
+  mix-blend-mode: hard-light;
+  transform: translateZ(0);
+  will-change: transform;
+}
+.bubble-bg__blob--first  { background: radial-gradient(circle at center, rgba(var(--first-color), 0.8) 0%, rgba(var(--first-color), 0) 50%); }
+.bubble-bg__blob--second { background: radial-gradient(circle at center, rgba(var(--second-color), 0.8) 0%, rgba(var(--second-color), 0) 50%); position: static; }
+.bubble-bg__blob--third  { background: radial-gradient(circle at center, rgba(var(--third-color), 0.8) 0%, rgba(var(--third-color), 0) 50%); top: calc(50% + 200px); left: calc(50% - 500px); }
+.bubble-bg__blob--fourth { background: radial-gradient(circle at center, rgba(var(--fourth-color), 0.8) 0%, rgba(var(--fourth-color), 0) 50%); opacity: 0.7; }
+.bubble-bg__blob--fifth  { background: radial-gradient(circle at center, rgba(var(--fifth-color), 0.8) 0%, rgba(var(--fifth-color), 0) 50%); width: 160%; height: 160%; top: calc(50% - 80%); left: calc(50% - 80%); }
+.bubble-bg__orbit { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; transform: translateZ(0); will-change: transform; }
+.bubble-bg__orbit--second { transform-origin: calc(50% - 400px) 50%; }
+.bubble-bg__orbit--third  { transform-origin: calc(50% + 400px) 50%; }
+.bubble-bg__orbit--fifth  { transform-origin: calc(50% - 800px) calc(50% + 200px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ride-bg { display: none; }
+  .ride .hr span { animation: none; }
+}
