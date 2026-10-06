@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
-import { hrPath, profileBars, shade, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
+import { hrPath, profileBars, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
 
 interface Props {
   workout: Workout;
@@ -13,6 +13,12 @@ interface Props {
   ftp?: number;
   /** Heart-rate readings to draw as a red line over the bars. */
   hr?: HrSample[];
+  /**
+   * Pixels at the bottom reserved for overlaid controls. Bar tops, the
+   * heart-rate line and the playhead live above this band; the bars
+   * themselves keep drawing down through it to the bottom edge.
+   */
+  reservePx?: number;
   className?: string;
 }
 
@@ -22,7 +28,19 @@ interface Props {
  * dimmed, with a playhead at "now". SVG scaled with preserveAspectRatio="none"
  * so it fills any width; strokes keep their pixel width.
  */
-export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, className }: Props) {
+export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, className }: Props) {
+  const svgRef = useRef<HTMLDivElement>(null);
+  const [heightPx, setHeightPx] = useState(0);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || !reservePx) return;
+    const ro = new ResizeObserver(([e]) => setHeightPx(e.contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [reservePx]);
+  // Fraction of the height where the chart's baseline sits (1 = bottom edge).
+  const bleed = Boolean(reservePx && heightPx);
+  const base = bleed ? Math.max(0.3, 1 - reservePx! / heightPx) : 1;
   const clipId = useId().replace(/:/g, "");
   const bars = useMemo(() => profileBars(workout.blocks, ftp), [workout.blocks, ftp]);
   const total = Math.max(workout.totalSec, 1);
@@ -37,9 +55,9 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
       <rect
         key={b.index}
         x={b.x + gap / 2}
-        y={1 - b.height}
+        y={base * (1 - b.height)}
         width={Math.max(b.width - gap, gap)}
-        height={b.height}
+        height={(bleed ? 1 : base) - base * (1 - b.height)}
         fill={`url(#${gradId(b.zone)})`}
         fillOpacity={opacity}
       />
@@ -49,8 +67,9 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
   const hrD = useMemo(() => (hr?.length ? hrPath(hr) : ""), [hr]);
 
   return (
+    <div ref={svgRef} className={`profile ${className ?? ""}`}>
     <svg
-      className={`profile ${className ?? ""}`}
+      className="profile__svg"
       viewBox={`0 0 ${total} 1`}
       preserveAspectRatio="none"
       role="img"
@@ -59,8 +78,10 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
       <defs>
         {zones.map((z) => (
           <linearGradient key={z} id={gradId(z)} x1="0" y1="0" x2="0" y2="1">
+            {/* Full colour through the top, then down to black at the base. */}
             <stop offset="0" stopColor={ZONE_COLORS[z]} />
-            <stop offset="1" stopColor={shade(ZONE_COLORS[z], 0.25)} />
+            <stop offset="0.4" stopColor={ZONE_COLORS[z]} />
+            <stop offset="1" stopColor="#000" />
           </linearGradient>
         ))}
         {/*
@@ -83,9 +104,9 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
       {cur && (
         <rect
           x={cur.x + gap / 2}
-          y={1 - cur.height}
+          y={base * (1 - cur.height)}
           width={Math.max(cur.width - gap, gap)}
-          height={cur.height}
+          height={base * cur.height}
           fill="none"
           stroke="#fff"
           strokeOpacity={0.9}
@@ -93,6 +114,7 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
           vectorEffect="non-scaling-stroke"
         />
       )}
+      <g transform={`scale(1 ${base})`}>
       {hrD && (
         <path
           className="profile__hr-glow"
@@ -118,9 +140,13 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
           vectorEffect="non-scaling-stroke"
         />
       )}
-      {ridden !== undefined && ridden > 0 && ridden < total && (
-        <line x1={ridden} x2={ridden} y1={0} y2={1} stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-      )}
+      </g>
     </svg>
+    {ridden !== undefined && ridden > 0 && ridden < total && (
+      // Playhead as a positioned element: an SVG line with a non-scaling
+      // stroke on this stretched chart was drawn far above the chart in Chrome.
+      <div className="profile__playhead" style={{ left: `${(ridden / total) * 100}%`, height: `${base * 100}%` }} />
+    )}
+    </div>
   );
 }

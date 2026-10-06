@@ -125,6 +125,19 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
     setNow(Date.now());
   }, [workout.blocks, pausedAt]);
 
+  // The profile runs to the bottom edge under the buttons; reserve their height
+  // (plus the gap below them) so bar tops and the heart-rate line stay above.
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [reservePx, setReservePx] = useState(88);
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el) return;
+    const measure = () => setReservePx(Math.round(el.offsetHeight + parseFloat(getComputedStyle(el).bottom || "0") + 10));
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const b = pos.block;
   const next = pos.next;
 
@@ -162,9 +175,16 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
         {pausedAt !== null && <p className="muted paused-note">Paused · tap to resume</p>}
       </div>
 
-      <div>
-        <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} hr={hrTrace} className="profile--ride" />
-        <div className="controls">
+      <div className="ride-bottom" style={{ "--reserve": `${reservePx}px` } as React.CSSProperties}>
+        <WorkoutProfile
+          workout={workout}
+          elapsedSec={Math.min(elapsedSec, workout.totalSec)}
+          currentIndex={pos.index}
+          hr={hrTrace}
+          reservePx={reservePx}
+          className="profile--ride"
+        />
+        <div className="controls" ref={controlsRef}>
           <button onClick={onExit}>Exit</button>
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>
           <button onClick={togglePause}>{pausedAt !== null ? "Resume" : "Pause"}</button>
