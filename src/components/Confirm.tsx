@@ -70,6 +70,7 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
                     <span className={`kind kind-${b.kind}`} aria-hidden />
                     {zoneLabel(b)}
                     {b.set && <span className="set">{b.set.index} of {b.set.count}</span>}
+                    {b.part && <span className="set">step {b.part.index}/{b.part.count}</span>}
                     {b.target.cadenceRpm && <span className="set">{b.target.cadenceRpm.lo}–{b.target.cadenceRpm.hi} rpm</span>}
                   </td>
                   <td className="dur">{clock(b.durationSec)}</td>

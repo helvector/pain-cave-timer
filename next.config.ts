@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The demo API reads redacted email fixtures at runtime; ship exactly those.
+  outputFileTracingIncludes: {
+    "/api/workout": ["./fixtures/trainingpeaks-*.html"],
+  },
 };
 
 export default nextConfig;

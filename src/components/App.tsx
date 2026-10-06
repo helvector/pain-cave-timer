@@ -59,6 +59,7 @@ export function App() {
     const qs = new URLSearchParams();
     if (params.get("date")) qs.set("date", params.get("date")!);
     if (demo) qs.set("demo", "1");
+    if (demo && params.get("fixture")) qs.set("fixture", params.get("fixture")!);
     try {
       const res = await fetch(`/api/workout?${qs}`, { headers: demo ? {} : { Authorization: `Bearer ${token}` }, cache: "no-store" });
       const body = (await res.json()) as ApiResult;

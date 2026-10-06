@@ -55,6 +55,14 @@ export function wattsLabel(block: Block): string | undefined {
 /** What to call the block at a glance: the coach's zone if any, else its kind. */
 export function zoneLabel(block: Block): string {
   const label = block.target.zone?.label;
-  if (label) return label.replace(/-/g, " · ");
+  const role = block.part && /^(Over|Under)$/.test(block.title) ? block.title : undefined;
+  if (label) return role ? `${role} · ${label.replace(/-/g, " · ")}` : label.replace(/-/g, " · ");
+  if (role) return role;
   return { warmup: "Warm up", work: "Work", recovery: "Recovery", cooldown: "Cool down" }[block.kind];
+}
+
+/** Top-right position text on the ride screen: "2 of 3 · 3/4", "2 of 3", or "5 / 17". */
+export function positionLabel(block: Block, total: number): string {
+  const parts = [block.set ? `${block.set.index} of ${block.set.count}` : undefined, block.part ? `${block.part.index}/${block.part.count}` : undefined].filter(Boolean);
+  return parts.length ? parts.join(" · ") : `${block.index + 1} / ${total}`;
 }

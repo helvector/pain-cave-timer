@@ -47,13 +47,64 @@ export function buildBlocks(steps: FlatStep[], ftp?: number): BuildResult {
       target: s.target,
       cue: index === 0 ? "start" : kind === "work" ? "work" : "recovery",
       set: s.set,
+      part: s.group ? { index: s.group.part, count: s.group.parts } : undefined,
+      groupId: s.group?.id,
       notes: s.notes,
     };
     t += s.durationSec;
     return block;
   });
+  annotateGroups(blocks);
   annotateSets(blocks);
   return { blocks, warnings };
+}
+
+/**
+ * Multi-step intervals (one email list item, several steps):
+ * - label alternating low/high targets "Under" and "Over", as coaches write "4U / 4O";
+ * - a step down inside the interval gets the recovery cue, a step up the work cue;
+ * - repeated identical intervals get "1 of 3" set numbers, carried onto the
+ *   recovery that follows each one.
+ */
+export function annotateGroups(blocks: Block[]): void {
+  const groups = new Map<number, Block[]>();
+  for (const b of blocks) if (b.groupId !== undefined) groups.set(b.groupId, [...(groups.get(b.groupId) ?? []), b]);
+  if (groups.size === 0) return;
+
+  const mid = (b: Block) => (b.target.watts ? (b.target.watts.lo + b.target.watts.hi) / 2 : undefined);
+  for (const members of groups.values()) {
+    const levels = [...new Set(members.map(mid).filter((m): m is number => m !== undefined))].sort((a, b) => a - b);
+    if (levels.length === 2 && members.length >= 2) {
+      for (const b of members) b.title = mid(b) === levels[1] ? "Over" : "Under";
+    }
+    members.forEach((b, k) => {
+      if (k === 0 || b.index === 0) return;
+      const prev = mid(members[k - 1]);
+      const cur = mid(b);
+      if (prev !== undefined && cur !== undefined && cur < prev) b.cue = "recovery";
+    });
+  }
+
+  // Number repeated identical intervals.
+  const sig = (members: Block[]) => members.map((b) => `${b.durationSec}|${b.target.watts?.lo}|${b.target.watts?.hi}`).join(",");
+  const ordered = [...groups.values()];
+  const runs: Block[][][] = [];
+  for (const g of ordered) {
+    const last = runs[runs.length - 1];
+    if (last && sig(last[0]) === sig(g)) last.push(g);
+    else runs.push([g]);
+  }
+  for (const run of runs) {
+    if (run.length < 2) continue;
+    run.forEach((members, i) => {
+      const set = { index: i + 1, count: run.length };
+      for (const b of members) b.set = set;
+      // The recovery right after an interval belongs to it.
+      for (let j = members[members.length - 1].index + 1; j < blocks.length && blocks[j].kind === "recovery" && blocks[j].groupId === undefined; j++) {
+        blocks[j].set = set;
+      }
+    });
+  }
 }
 
 function defaultTitle(kind: BlockKind): string {
@@ -88,6 +139,10 @@ export function annotateSets(blocks: Block[]): void {
   };
 
   blocks.forEach((b, i) => {
+    if (b.groupId !== undefined) {
+      close(i); // multi-step intervals are numbered by annotateGroups
+      return;
+    }
     if (b.kind === "work") {
       const sig = signature(b);
       if (run && run.sig !== sig) close(i);
