@@ -8,6 +8,7 @@ import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
 import { RideBackground } from "./RideBackground";
+import { WorkoutProfile } from "./WorkoutProfile";
 
 /** Quick, non-bouncy spring for digits that change every second. */
 const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
@@ -149,17 +150,7 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
             <span aria-hidden>♥</span> {bpm}
           </div>
         )}
-        <div className="progress" aria-hidden>
-          {workout.blocks.map((blk) => {
-            const state = blk.index < pos.index ? "done" : blk.index === pos.index ? "current" : "";
-            const fill = blk.index === pos.index ? Math.min(100, (pos.elapsedInBlockSec / blk.durationSec) * 100) : 0;
-            return (
-              <span key={blk.index} className={`${blk.kind} ${state}`} style={{ flexGrow: blk.durationSec }}>
-                <i style={fill ? { width: `${fill}%` } : undefined} />
-              </span>
-            );
-          })}
-        </div>
+        <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} className="profile--ride" />
         <div className="controls">
           <button onClick={onExit}>Exit</button>
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>
