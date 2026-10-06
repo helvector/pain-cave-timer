@@ -141,12 +141,15 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
           <RollingClock sec={pos.remainingSec} />
         </div>
         {b.target.watts ? (
-          <div className="watts">
+          <div
+            className="watts"
+            aria-label={b.target.watts.hi !== b.target.watts.lo ? `${b.target.watts.lo} to ${b.target.watts.hi} watts` : `${b.target.watts.lo} watts`}
+          >
+            <PowerIcon />
             <CountingNumber number={b.target.watts.lo} initiallyStable transition={WATTS_SPRING} />
             {b.target.watts.hi !== b.target.watts.lo && (
               <>–<CountingNumber number={b.target.watts.hi} initiallyStable transition={WATTS_SPRING} /></>
             )}
-            <small>W</small>
           </div>
         ) : (
           <div className="watts" style={{ fontSize: "clamp(1.6rem, 6vmin, 4rem)" }}>{b.target.raw || b.title}</div>
@@ -156,7 +159,7 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
             <span aria-hidden>♥</span>{bpm}
           </div>
         )}
-        {pausedAt !== null && <p className="muted" style={{ fontSize: "1.4rem" }}>Paused · tap to resume</p>}
+        {pausedAt !== null && <p className="muted paused-note">Paused · tap to resume</p>}
       </div>
 
       <Blur key={`next-${pos.index}`} className="next" initialBlur={8} delay={0.1} transition={{ duration: 0.35 }}>
@@ -206,5 +209,18 @@ function RollingClock({ sec }: { sec: number }) {
         ),
       )}
     </>
+  );
+}
+
+/**
+ * Power mark to the left of the watt target, sized and placed like the heart
+ * beside the heart rate. Drawn rather than the ⚡ emoji, which iOS renders in
+ * colour; this one takes the number's colour.
+ */
+function PowerIcon() {
+  return (
+    <svg className="watts__icon" viewBox="0 0 16 24" aria-hidden>
+      <path d="M10.5 0 1 13.5h6.2L4.8 24 15 9.8H8.6L10.5 0Z" fill="currentColor" />
+    </svg>
   );
 }
