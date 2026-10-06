@@ -9,6 +9,7 @@ import { CountingNumber } from "@/components/animate-ui/primitives/texts/countin
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
 import { RideBackground } from "./RideBackground";
 import { WorkoutProfile } from "./WorkoutProfile";
+import { addHrSample, type HrSample } from "@/lib/profile";
 
 /** Quick, non-bouncy spring for digits that change every second. */
 const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
@@ -40,6 +41,23 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
 
   const elapsedSec = ((pausedAt ?? now) - startedAt) / 1000;
   const pos = positionAt(workout, elapsedSec);
+
+  // Heart-rate trace for the profile: one reading every 2 s while riding,
+  // a null when the strap has no reading so the line breaks there.
+  const [hrTrace, setHrTrace] = useState<HrSample[]>([]);
+  const latest = useRef({ bpm, elapsedSec });
+  useEffect(() => {
+    latest.current = { bpm, elapsedSec };
+  });
+  useEffect(() => {
+    if (pausedAt !== null) return;
+    const id = setInterval(() => {
+      const { bpm: b, elapsedSec: t } = latest.current;
+      if (t >= workout.totalSec) return;
+      setHrTrace((prev) => addHrSample(prev, { t: Math.max(0, t), bpm: b ?? null }));
+    }, 2000);
+    return () => clearInterval(id);
+  }, [pausedAt, workout.totalSec]);
 
   // Unlock audio, go fullscreen, keep the screen awake. All from the Start tap.
   useEffect(() => {
@@ -150,7 +168,7 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
             <span aria-hidden>♥</span> {bpm}
           </div>
         )}
-        <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} className="profile--ride" />
+        <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} hr={hrTrace} className="profile--ride" />
         <div className="controls">
           <button onClick={onExit}>Exit</button>
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>

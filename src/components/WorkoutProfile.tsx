@@ -2,7 +2,7 @@
 
 import { useId, useMemo } from "react";
 import type { Workout } from "@/lib/workout/types";
-import { profileBars } from "@/lib/profile";
+import { hrPath, profileBars, type HrSample } from "@/lib/profile";
 
 interface Props {
   workout: Workout;
@@ -11,6 +11,8 @@ interface Props {
   /** Index of the block being ridden, drawn with an outline. */
   currentIndex?: number;
   ftp?: number;
+  /** Heart-rate readings to draw as a red line over the bars. */
+  hr?: HrSample[];
   className?: string;
 }
 
@@ -20,7 +22,7 @@ interface Props {
  * dimmed, with a playhead at "now". SVG scaled with preserveAspectRatio="none"
  * so it fills any width; strokes keep their pixel width.
  */
-export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, className }: Props) {
+export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, className }: Props) {
   const clipId = useId().replace(/:/g, "");
   const bars = useMemo(() => profileBars(workout.blocks, ftp), [workout.blocks, ftp]);
   const total = Math.max(workout.totalSec, 1);
@@ -41,6 +43,7 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, classNa
     ));
 
   const cur = currentIndex !== undefined ? bars[currentIndex] : undefined;
+  const hrD = useMemo(() => (hr?.length ? hrPath(hr) : ""), [hr]);
 
   return (
     <svg
@@ -69,6 +72,18 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, classNa
           stroke="#fff"
           strokeOpacity={0.9}
           strokeWidth={1.5}
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+      {hrD && (
+        <path
+          className="profile__hr"
+          d={hrD}
+          fill="none"
+          stroke="#ff2b2b"
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
       )}

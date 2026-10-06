@@ -34,10 +34,12 @@ function zoneForPct(pct: number): ZoneCode {
  */
 export function blockZone(block: Block, ftp?: number): ZoneCode {
   // "Tempo-Threshold" is just under threshold: its own yellow-orange, so the
-  // unders read apart from both tempo and the "Threshold" overs. Any other
-  // span (e.g. "Recovery-Endurance") takes its lower zone.
-  const codes = block.target.zone?.codes ?? [];
-  if (codes.includes("Z3") && codes.includes("Z4")) return "SS";
+  // unders read apart from both tempo and the "Threshold" overs. A span that
+  // includes recovery ("Recovery-Endurance" warm-ups) is endurance riding, so
+  // recovery is dropped from it; any other span takes its lower zone.
+  const all = block.target.zone?.codes ?? [];
+  if (all.includes("Z3") && all.includes("Z4")) return "SS";
+  const codes = all.length > 1 ? all.filter((c) => c !== "Z1") : all;
   const named = codes.length ? codes.reduce((lo, c) => (ORDER.indexOf(c) < ORDER.indexOf(lo) ? c : lo)) : undefined;
   if (named) return named;
   if (block.target.ftpPct) return zoneForPct(block.target.ftpPct.hi);
@@ -90,4 +92,54 @@ export function profileBars(blocks: Block[], ftp?: number): ProfileBar[] {
       zone,
     };
   });
+}
+
+/** One heart-rate reading at a point in the workout; null marks a dropout. */
+export interface HrSample {
+  /** Seconds into the workout. */
+  t: number;
+  bpm: number | null;
+}
+
+/**
+ * Fixed heart-rate scale for the profile, so the line doesn't rescale
+ * mid-ride. The top is the rider's max heart rate (200), so the line touching
+ * the top of the chart means flat out.
+ */
+export const HR_RANGE = { lo: 60, hi: 200 };
+
+/**
+ * SVG path data for the heart-rate line in the profile's coordinate space
+ * (x in workout seconds, y 0..1 top-down). A null sample, time going
+ * backwards (Back), or a jump forward (Skip) starts a new segment.
+ */
+export function hrPath(samples: HrSample[], range = HR_RANGE): string {
+  const y = (bpm: number) => {
+    const n = (Math.min(range.hi, Math.max(range.lo, bpm)) - range.lo) / (range.hi - range.lo);
+    return +(1 - n * 0.92).toFixed(4);
+  };
+  let d = "";
+  let pen = false;
+  let lastT = -Infinity;
+  for (const s of samples) {
+    // Break on a dropout, a Back jump, or a Skip jump (gap well over the 2 s cadence).
+    if (s.bpm === null || s.t < lastT || s.t - lastT > 6) pen = false;
+    if (s.bpm !== null) {
+      d += `${pen ? "L" : "M"}${+s.t.toFixed(1)} ${y(s.bpm)}`;
+      pen = true;
+    }
+    lastT = s.t;
+  }
+  return d;
+}
+
+/**
+ * Append a reading, first dropping anything at or after its time so a Back
+ * jump overwrites the old trace rather than drawing over it.
+ */
+export function addHrSample(samples: HrSample[], next: HrSample): HrSample[] {
+  const kept = samples.filter((s) => s.t < next.t);
+  // Collapse consecutive dropouts.
+  if (next.bpm === null && kept.at(-1)?.bpm === null) return kept;
+  return [...kept, next];
 }
