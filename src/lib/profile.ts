@@ -151,5 +151,12 @@ export function shade(hex: string, amount: number): string {
   return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Opacity of bars not yet ridden; raised so the zone colours pop. Ridden bars are 1. */
-export const UNRIDDEN_OPACITY = 0.45;
+/** Opacity of bars not yet ridden; bright enough that oranges stay orange on black. Ridden bars are 1. */
+export const UNRIDDEN_OPACITY = 0.72;
+
+/** Mix a #rrggbb colour with white; amount 0.3 = 30% white. */
+export function tint(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (shift: number) => Math.round(((n >> shift) & 255) + (255 - ((n >> shift) & 255)) * amount);
+  return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, "0")).join("")}`;
+}
