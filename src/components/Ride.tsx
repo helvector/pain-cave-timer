@@ -151,6 +151,11 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
         ) : (
           <div className="watts" style={{ fontSize: "clamp(1.6rem, 6vmin, 4rem)" }}>{b.target.raw || b.title}</div>
         )}
+        {bpm !== undefined && (
+          <div className="hr" aria-label={`${bpm} beats per minute`}>
+            <span aria-hidden>♥</span>{bpm}
+          </div>
+        )}
         {pausedAt !== null && <p className="muted" style={{ fontSize: "1.4rem" }}>Paused · tap to resume</p>}
       </div>
 
@@ -163,11 +168,6 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
       </Blur>
 
       <div>
-        {bpm !== undefined && (
-          <div className="hr" aria-label={`${bpm} beats per minute`}>
-            <span aria-hidden>♥</span> {bpm}
-          </div>
-        )}
         <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} hr={hrTrace} className="profile--ride" />
         <div className="controls">
           <button onClick={onExit}>Exit</button>

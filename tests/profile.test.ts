@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { addHrSample, blockZone, hrPath, profileBars, ZONE_COLORS, type HrSample } from "../src/lib/profile";
+import { addHrSample, blockZone, hrPath, profileBars, shade, ZONE_COLORS, type HrSample } from "../src/lib/profile";
 
 const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunder-3x16.html", "utf8"), {
   subject: "Schedule for Tuesday 10/06/2026 to Wednesday 10/07/2026",
@@ -77,5 +77,13 @@ describe("heart-rate line", () => {
     s = addHrSample(s, { t: 2, bpm: null });
     s = addHrSample(s, { t: 4, bpm: null });
     expect(s).toEqual([{ t: 0, bpm: 100 }, { t: 2, bpm: null }]);
+  });
+});
+
+describe("shade", () => {
+  it("mixes 25% black into a colour", () => {
+    expect(shade("#ffffff", 0.25)).toBe("#bfbfbf");
+    expect(shade("#ff6a1a", 0.25)).toBe("#bf5014");
+    expect(shade("#000000", 0.25)).toBe("#000000");
   });
 });
