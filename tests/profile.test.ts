@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { blockZone, profileBars, ZONE_COLORS } from "../src/lib/profile";
+import { addHrSample, blockZone, hrPath, profileBars, ZONE_COLORS, type HrSample } from "../src/lib/profile";
 
 const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunder-3x16.html", "utf8"), {
   subject: "Schedule for Tuesday 10/06/2026 to Wednesday 10/07/2026",
@@ -10,8 +10,9 @@ const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunde
 describe("blockZone", () => {
   it("uses the coach's zone label; Tempo-Threshold is under threshold", () => {
     // Warm up "Recovery-Endurance", Under "Tempo-Threshold", Over "Threshold".
-    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["Z1", "SS", "Z4", "SS"]);
-    expect(blockZone(ou.blocks[5])).toBe("Z1"); // Recovery
+    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["Z2", "SS", "Z4", "SS"]);
+    expect(blockZone(ou.blocks[5])).toBe("Z1"); // plain Recovery stays green
+    expect(blockZone({ ...ou.blocks[0], target: { raw: "", zone: { label: "Endurance-Tempo", codes: ["Z2", "Z3"] } } })).toBe("Z2");
   });
   it("falls back to %FTP, then watts vs FTP, then kind", () => {
     const base = { ...ou.blocks[1], target: { raw: "" } };
@@ -47,5 +48,34 @@ describe("zone palette", () => {
       Z1: "#3ecf6e", Z2: "#3a8ee6", Z3: "#ffd23f", SS: "#ffaa2b",
       Z4: "#ff6a1a", Z5: "#ff3b30", Z6: "#d61f2c", Z7: "#a3122a",
     });
+  });
+});
+
+describe("heart-rate line", () => {
+  it("maps bpm onto the fixed 60-200 scale (max HR at the top)", () => {
+    expect(hrPath([{ t: 0, bpm: 60 }, { t: 2, bpm: 200 }])).toBe("M0 1L2 0.08");
+    expect(hrPath([{ t: 0, bpm: 40 }, { t: 2, bpm: 230 }])).toBe("M0 1L2 0.08"); // clamped
+  });
+  it("breaks the line at a dropout", () => {
+    expect(hrPath([{ t: 0, bpm: 125 }, { t: 2, bpm: null }, { t: 4, bpm: 125 }])).toBe("M0 0.5729M4 0.5729");
+  });
+  it("breaks the line across a Skip jump", () => {
+    expect(hrPath([{ t: 0, bpm: 125 }, { t: 2, bpm: 125 }, { t: 300, bpm: 125 }])).toBe("M0 0.5729L2 0.5729M300 0.5729");
+  });
+  it("is empty with no readings", () => {
+    expect(hrPath([])).toBe("");
+    expect(hrPath([{ t: 0, bpm: null }])).toBe("");
+  });
+  it("a Back jump replaces the trace from that point on", () => {
+    let s: HrSample[] = [];
+    for (const [t, bpm] of [[0, 100], [2, 110], [4, 120], [6, 130]] as const) s = addHrSample(s, { t, bpm });
+    s = addHrSample(s, { t: 3, bpm: 140 });
+    expect(s.map((x) => x.t)).toEqual([0, 2, 3]);
+  });
+  it("collapses repeated dropouts", () => {
+    let s: HrSample[] = [{ t: 0, bpm: 100 }];
+    s = addHrSample(s, { t: 2, bpm: null });
+    s = addHrSample(s, { t: 4, bpm: null });
+    expect(s).toEqual([{ t: 0, bpm: 100 }, { t: 2, bpm: null }]);
   });
 });

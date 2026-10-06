@@ -110,12 +110,15 @@ the session's shape (`WorkoutProfile`, geometry in `src/lib/profile.ts`): one
 bar per block, width = duration, height = top of the watt target, colour =
 power zone: recovery green, endurance mid blue, tempo yellow, under
 threshold yellow-orange, threshold deep orange, reds above. Zone comes from
-the coach's label ("Tempo-Threshold" counts as under threshold; other spans
-take the lower zone), then
+the coach's label ("Tempo-Threshold" counts as under threshold;
+"Recovery-Endurance" counts as endurance; other spans take the lower zone), then
 %FTP, then watts against `FTP_WATTS`. The height axis starts at a baseline
 below the easiest block, as training apps do, so small target steps show.
 Ridden time is drawn at full strength with a playhead; the current block is
-outlined.
+outlined. With a heart-rate strap connected, a 2 px red line plots heart rate
+over the bars (one reading every 2 s, fixed 60–200 bpm scale with max HR at
+the top); it breaks on dropouts and across Skip/Back jumps, and pauses with
+the timer.
 
 ## Living background
 
