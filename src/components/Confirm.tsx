@@ -5,6 +5,8 @@ import { clock, wattsLabel, zoneLabel } from "@/lib/timer";
 import { Fades } from "@/components/animate-ui/primitives/effects/fade";
 import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/primitives/buttons/ripple";
 import type { HeartRateState } from "@/hooks/use-heart-rate";
+import { WorkoutProfile } from "./WorkoutProfile";
+import { blockZone, ZONE_COLORS } from "@/lib/profile";
 
 interface Props {
   result: { date: string; days: Workout[]; warnings: string[]; demo?: boolean; email?: { subject: string } };
@@ -58,6 +60,10 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
           <ul>{issues.map((m, i) => <li key={i}>{m}</li>)}</ul>
         </div>
 
+        <div hidden={w.isRestDay}>
+          <WorkoutProfile workout={w} className="profile--preview" />
+        </div>
+
         {w.isRestDay ? (
           <p>Rest day. Nothing to ride.</p>
         ) : (
@@ -67,7 +73,7 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
                 <tr key={b.index}>
                   <td className="num">{b.index + 1}</td>
                   <td>
-                    <span className={`kind kind-${b.kind}`} aria-hidden />
+                    <span className="kind" style={{ background: ZONE_COLORS[blockZone(b)] }} title={blockZone(b)} aria-hidden />
                     {zoneLabel(b)}
                     {b.set && <span className="set">{b.set.index} of {b.set.count}</span>}
                     {b.part && <span className="set">step {b.part.index}/{b.part.count}</span>}

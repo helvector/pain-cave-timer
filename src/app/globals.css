@@ -179,13 +179,6 @@ p { margin: 0; line-height: 1.4; }
 }
 .ride .next b { color: var(--fg); font-weight: 600; }
 .ride.paused .time { opacity: 0.5; }
-.progress { display: flex; gap: 2px; height: 10px; width: 100%; }
-.progress span { position: relative; height: 100%; background: var(--line); border-radius: 3px; overflow: hidden; }
-.progress span i { position: absolute; inset: 0; width: 0; background: var(--muted); transition: width 150ms linear; }
-.progress span.done i { width: 100%; }
-.progress span.work i { background: var(--work); }
-.progress span.recovery i { background: var(--recovery); }
-.progress span.warmup i, .progress span.cooldown i { background: var(--easy); }
 .controls { display: flex; gap: 10px; justify-content: space-between; padding-top: 14px; }
 .controls button { flex: 1; padding: 14px 8px; font-size: 1rem; color: var(--muted); border-color: var(--line); }
 
@@ -248,3 +241,9 @@ p { margin: 0; line-height: 1.4; }
   .ride-bg { display: none; }
   .ride .hr span { animation: none; }
 }
+
+/* ---- workout profile (replaces the flat progress strip) ---------------- */
+.profile { display: block; width: 100%; overflow: visible; }
+.profile--ride { height: clamp(56px, 13vh, 150px); }
+.profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
+.profile rect { transition: fill-opacity 300ms ease; }

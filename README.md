@@ -103,6 +103,18 @@ If `THR_BPM` is set, the coach's "Heart Rate: 84-92% of THR" notes are
 resolved to a BPM range on each block (`target.hrBpm`) for anything that
 wants it later; the UI does not colour the readout against it.
 
+## Workout profile
+
+The bottom of the ride screen, and the top of the confirmation screen, show
+the session's shape (`WorkoutProfile`, geometry in `src/lib/profile.ts`): one
+bar per block, width = duration, height = top of the watt target, colour =
+power zone. Zone comes from the coach's label (a span such as
+"Tempo-Threshold" takes the lower zone, so unders and overs differ), then
+%FTP, then watts against `FTP_WATTS`. The height axis starts at a baseline
+below the easiest block, as training apps do, so small target steps show.
+Ridden time is drawn at full strength with a playhead; the current block is
+outlined.
+
 ## Living background
 
 The ride screen sits on Animate UI's Bubble Background, ported to plain CSS
