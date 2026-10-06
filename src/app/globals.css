@@ -101,7 +101,7 @@ p { margin: 0; line-height: 1.4; }
   height: 100dvh;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
            max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
   transition: background-color 300ms ease;
@@ -145,6 +145,9 @@ p { margin: 0; line-height: 1.4; }
   display: flex;
   justify-content: center;
   align-items: center;
+  /* Trim the countdown's vertical footprint by 10% (0.05em off the empty
+     space above and below the figures); the digits themselves are unchanged. */
+  margin-block: -0.05em;
 }
 /*
  * Fixed cells so proportional digits do not jitter as the clock counts down.
@@ -161,7 +164,7 @@ p { margin: 0; line-height: 1.4; }
 .ride .watts {
   /* 2× the previous min(24vw, 16vh), capped so "220–235 W" (~2.2em in
      Balfron) still fits the width on a portrait phone. */
-  font-size: min(48vw, 32vh, calc((100vw - 48px) / 2.2));
+  font-size: min(33.6vw, 22.4vh, calc((100vw - 48px) * 0.7 / 2.2)); /* 70% of the previous 2x size */
   /* Balfron figures fill ~0.67em of the line box; 0.82 trims the empty
      leading so time, watts and heart rate all fit a portrait phone. */
   line-height: 0.82;
@@ -179,7 +182,7 @@ p { margin: 0; line-height: 1.4; }
   /* Same size and face as the watt target, in heart-rate red. */
   font-family: var(--font-display), var(--font-ui), sans-serif;
   font-weight: 400;
-  font-size: min(48vw, 32vh, calc((100vw - 48px) / 2.2));
+  font-size: min(33.6vw, 22.4vh, calc((100vw - 48px) * 0.7 / 2.2)); /* 70% of the previous 2x size */
   line-height: 0.82;
   color: #ff2b2b;
   text-align: center;
@@ -188,13 +191,6 @@ p { margin: 0; line-height: 1.4; }
 .ride .hr span { font-size: 0.45em; vertical-align: 0.55em; margin-right: 0.12em; animation: beat var(--beat, 5s) ease-in-out infinite; display: inline-block; }
 .hr-row { font-size: 1.05rem; }
 .hr-row button { padding: 10px 16px; font-size: 0.95rem; }
-.ride .next {
-  font-size: clamp(1rem, 3.4vmin, 2.2rem);
-  color: var(--muted);
-  text-align: center;
-  padding: 8px 0 14px;
-}
-.ride .next b { color: var(--fg); font-weight: 600; }
 .ride.paused .time { opacity: 0.5; }
 .controls { display: flex; gap: 10px; justify-content: space-between; padding-top: 14px; }
 .controls button { flex: 1; padding: 14px 8px; font-size: 1rem; color: var(--muted); border-color: var(--line); }

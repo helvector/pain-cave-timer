@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
-import { clock, positionAt, positionLabel, wattsLabel, zoneLabel } from "@/lib/timer";
+import { clock, positionAt, positionLabel, zoneLabel } from "@/lib/timer";
 import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
@@ -161,14 +161,6 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
         )}
         {pausedAt !== null && <p className="muted paused-note">Paused · tap to resume</p>}
       </div>
-
-      <Blur key={`next-${pos.index}`} className="next" initialBlur={8} delay={0.1} transition={{ duration: 0.35 }}>
-        {next ? (
-          <>Next <b>{zoneLabel(next)}</b> · {clock(next.durationSec)}{wattsLabel(next) ? <> · <b>{wattsLabel(next)} W</b></> : null}</>
-        ) : (
-          <>Last block · {clock(workout.totalSec - elapsedSec)} to go</>
-        )}
-      </Blur>
 
       <div>
         <WorkoutProfile workout={workout} elapsedSec={Math.min(elapsedSec, workout.totalSec)} currentIndex={pos.index} hr={hrTrace} className="profile--ride" />

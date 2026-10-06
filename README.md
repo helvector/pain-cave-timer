@@ -128,8 +128,8 @@ in `src/components/animate-ui/components/backgrounds/bubble.tsx` and wrapped by
 recovery blues, warm-up/cool-down greys) at reduced opacity so the numerals
 keep their contrast, and the whole field pulses once per heartbeat: the CSS
 animation period is 60 / BPM, so a changing rate re-times the loop without
-restarting it. With no strap it breathes slowly. The BPM readout sits bottom
-left above the progress bar. Preview without a strap: `/?demo=1&bpm=142`; add `&fixture=overunder` for
+restarting it. With no strap it breathes slowly. The BPM readout sits under
+the watt target, matching it in size. Preview without a strap: `/?demo=1&bpm=142`; add `&fixture=overunder` for
 the over-under fixture.
 Reduced-motion users get the flat tint.
 
