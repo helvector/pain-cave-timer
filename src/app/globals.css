@@ -118,8 +118,11 @@ p { margin: 0; line-height: 1.4; }
 }
 .ride .top {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: baseline;
+  gap: 0.6em;
+  flex-wrap: wrap;
+  text-align: center;
   font-size: clamp(1.6rem, 6vmin, 3.6rem);
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -156,19 +159,26 @@ p { margin: 0; line-height: 1.4; }
 .time [data-slot="sliding-number-roller"] > span:nth-child(3) { padding-left: 0.03em; }
 .ride .time.long { font-size: min(46vw, 30vh); }
 .ride .watts {
-  font-size: min(24vw, 16vh);
-  line-height: 1;
+  /* 2× the previous min(24vw, 16vh), capped so "220–235 W" (~2.2em in
+     Balfron) still fits the width on a portrait phone. */
+  font-size: min(48vw, 32vh, calc((100vw - 48px) / 2.2));
+  /* Balfron figures fill ~0.67em of the line box; 0.82 trims the empty
+     leading so time, watts and heart rate all fit a portrait phone. */
+  line-height: 0.82;
+  white-space: nowrap;
 }
 .ride .watts small { font-family: var(--font-ui), sans-serif; font-size: 0.32em; font-weight: 600; color: var(--muted); margin-left: 0.2em; }
 .ride .hr {
-  font-family: var(--font-ui), sans-serif;
-  font-size: clamp(1.1rem, 3.6vmin, 2.2rem);
-  font-weight: 600;
-  color: var(--muted);
-  padding: 0 2px 8px;
+  /* Same size and face as the watt target, in heart-rate red. */
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-weight: 400;
+  font-size: min(48vw, 32vh, calc((100vw - 48px) / 2.2));
+  line-height: 0.82;
+  color: #ff2b2b;
+  text-align: center;
+  white-space: nowrap;
 }
-.ride .hr span { color: var(--work); font-size: 0.85em; animation: beat var(--beat, 5s) ease-in-out infinite; display: inline-block; }
-.ride.recovery .hr span { color: var(--recovery); }
+.ride .hr span { font-size: 0.45em; vertical-align: 0.55em; margin-right: 0.12em; animation: beat var(--beat, 5s) ease-in-out infinite; display: inline-block; }
 .hr-row { font-size: 1.05rem; }
 .hr-row button { padding: 10px 16px; font-size: 0.95rem; }
 .ride .next {
@@ -244,6 +254,6 @@ p { margin: 0; line-height: 1.4; }
 
 /* ---- workout profile (replaces the flat progress strip) ---------------- */
 .profile { display: block; width: 100%; overflow: visible; }
-.profile--ride { height: clamp(56px, 13vh, 150px); }
+.profile--ride { height: clamp(70px, 16.25vh, 188px); }
 .profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
 .profile rect { transition: fill-opacity 300ms ease; }

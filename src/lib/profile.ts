@@ -143,3 +143,13 @@ export function addHrSample(samples: HrSample[], next: HrSample): HrSample[] {
   if (next.bpm === null && kept.at(-1)?.bpm === null) return kept;
   return [...kept, next];
 }
+
+/** Mix a #rrggbb colour with black; amount 0.25 = 25% black. */
+export function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (shift: number) => Math.round(((n >> shift) & 255) * (1 - amount));
+  return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Opacity of bars not yet ridden (was 0.22; +30%). Ridden bars are 1. */
+export const UNRIDDEN_OPACITY = 0.29;

@@ -2,7 +2,7 @@
 
 import { useId, useMemo } from "react";
 import type { Workout } from "@/lib/workout/types";
-import { hrPath, profileBars, type HrSample } from "@/lib/profile";
+import { hrPath, profileBars, shade, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
 
 interface Props {
   workout: Workout;
@@ -29,6 +29,9 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
   const gap = total * 0.0025;
   const ridden = elapsedSec === undefined ? undefined : Math.max(0, Math.min(total, elapsedSec));
 
+  // One vertical gradient per zone: full colour at the top, 25% black at the base.
+  const gradId = (zone: string) => `${clipId}-g-${zone}`;
+  const zones = [...new Set(bars.map((b) => b.zone))];
   const rects = (opacity: number) =>
     bars.map((b) => (
       <rect
@@ -37,7 +40,7 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
         y={1 - b.height}
         width={Math.max(b.width - gap, gap)}
         height={b.height}
-        fill={b.color}
+        fill={`url(#${gradId(b.zone)})`}
         fillOpacity={opacity}
       />
     ));
@@ -53,14 +56,20 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
       role="img"
       aria-label={`Workout profile, ${workout.blocks.length} blocks`}
     >
-      {ridden !== undefined && (
-        <defs>
+      <defs>
+        {zones.map((z) => (
+          <linearGradient key={z} id={gradId(z)} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={ZONE_COLORS[z]} />
+            <stop offset="1" stopColor={shade(ZONE_COLORS[z], 0.25)} />
+          </linearGradient>
+        ))}
+        {ridden !== undefined && (
           <clipPath id={clipId}>
             <rect x={0} y={0} width={ridden} height={1} />
           </clipPath>
-        </defs>
-      )}
-      <g>{rects(ridden === undefined ? 0.85 : 0.22)}</g>
+        )}
+      </defs>
+      <g>{rects(ridden === undefined ? 0.85 : UNRIDDEN_OPACITY)}</g>
       {ridden !== undefined && <g clipPath={`url(#${clipId})`}>{rects(1)}</g>}
       {cur && (
         <rect
