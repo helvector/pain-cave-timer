@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
-import { hrPath, profileBars, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
+import { hrPath, profileBars, shade, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
 
 interface Props {
   workout: Workout;
@@ -78,10 +78,10 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
       <defs>
         {zones.map((z) => (
           <linearGradient key={z} id={gradId(z)} x1="0" y1="0" x2="0" y2="1">
-            {/* Full colour through the top, then down to black at the base. */}
+            {/* Full colour through the top, fading to 25% black at 50% opacity at the base. */}
             <stop offset="0" stopColor={ZONE_COLORS[z]} />
             <stop offset="0.4" stopColor={ZONE_COLORS[z]} />
-            <stop offset="1" stopColor="#000" />
+            <stop offset="1" stopColor={shade(ZONE_COLORS[z], 0.25)} stopOpacity={0.5} />
           </linearGradient>
         ))}
         {/*
