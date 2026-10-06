@@ -8,9 +8,9 @@ const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunde
 }).days[0];
 
 describe("blockZone", () => {
-  it("uses the coach's zone label, taking the lower zone of a span", () => {
+  it("uses the coach's zone label; Tempo-Threshold is under threshold", () => {
     // Warm up "Recovery-Endurance", Under "Tempo-Threshold", Over "Threshold".
-    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["Z1", "Z3", "Z4", "Z3"]);
+    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["Z1", "SS", "Z4", "SS"]);
     expect(blockZone(ou.blocks[5])).toBe("Z1"); // Recovery
   });
   it("falls back to %FTP, then watts vs FTP, then kind", () => {
@@ -37,6 +37,15 @@ describe("profileBars", () => {
     expect(rec.height).toBeGreaterThanOrEqual(0.12);
     expect(rec.height).toBeLessThan(warm.height);
     expect(warm.height).toBeLessThan(under.height);
-    expect([under.color, over.color]).toEqual([ZONE_COLORS.Z3, ZONE_COLORS.Z4]);
+    expect([under.color, over.color, rec.color]).toEqual([ZONE_COLORS.SS, ZONE_COLORS.Z4, ZONE_COLORS.Z1]);
+  });
+});
+
+describe("zone palette", () => {
+  it("runs green, blue, yellow, yellow-orange, deep orange, then reds", () => {
+    expect(ZONE_COLORS).toEqual({
+      Z1: "#3ecf6e", Z2: "#3a8ee6", Z3: "#ffd23f", SS: "#ffaa2b",
+      Z4: "#ff6a1a", Z5: "#ff3b30", Z6: "#d61f2c", Z7: "#a3122a",
+    });
   });
 });

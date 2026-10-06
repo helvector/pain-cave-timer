@@ -2,18 +2,19 @@ import type { Block, ZoneCode } from "./workout/types";
 import { ZONES } from "./workout/zones";
 
 /**
- * Zone colours for the workout profile. One hue per zone, ordered cool to hot,
- * close to the convention TrainingPeaks and Zwift riders already read.
+ * Zone colours for the workout profile, cool to hot:
+ * recovery green, endurance mid blue, tempo yellow, under threshold
+ * yellow-orange, threshold deep orange, then reds above threshold.
  */
 export const ZONE_COLORS: Record<ZoneCode, string> = {
-  Z1: "#8c9099",
-  Z2: "#3fa9f5",
-  Z3: "#3ecf6e",
-  SS: "#d4dd3c",
-  Z4: "#ffc933",
-  Z5: "#ff8a2a",
-  Z6: "#ff4b3a",
-  Z7: "#b46cff",
+  Z1: "#3ecf6e", // recovery: green
+  Z2: "#3a8ee6", // endurance: mid blue
+  Z3: "#ffd23f", // tempo: yellow
+  SS: "#ffaa2b", // under threshold / sweet spot: yellow-orange
+  Z4: "#ff6a1a", // threshold (the overs): deep orange
+  Z5: "#ff3b30", // VO2max: red
+  Z6: "#d61f2c", // anaerobic: deeper red
+  Z7: "#a3122a", // neuromuscular: crimson
 };
 
 const ORDER: ZoneCode[] = ["Z1", "Z2", "Z3", "SS", "Z4", "Z5", "Z6", "Z7"];
@@ -32,10 +33,11 @@ function zoneForPct(pct: number): ZoneCode {
  * guess from the block kind so nothing renders colourless.
  */
 export function blockZone(block: Block, ftp?: number): ZoneCode {
-  // A label spanning two zones ("Tempo-Threshold") is a target sitting on the
-  // boundary; colour it by the lower zone so it reads differently from a
-  // block the coach calls plain "Threshold" (the under vs the over).
+  // "Tempo-Threshold" is just under threshold: its own yellow-orange, so the
+  // unders read apart from both tempo and the "Threshold" overs. Any other
+  // span (e.g. "Recovery-Endurance") takes its lower zone.
   const codes = block.target.zone?.codes ?? [];
+  if (codes.includes("Z3") && codes.includes("Z4")) return "SS";
   const named = codes.length ? codes.reduce((lo, c) => (ORDER.indexOf(c) < ORDER.indexOf(lo) ? c : lo)) : undefined;
   if (named) return named;
   if (block.target.ftpPct) return zoneForPct(block.target.ftpPct.hi);
