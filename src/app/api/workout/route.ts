@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createImapSource, mailConfigFromEnv } from "@/lib/mail";
 import { fetchWorkoutFor } from "@/lib/workout/fetch-today";
 import { appTimeZone, todayIn } from "@/lib/date";
-import { demoWorkouts } from "@/lib/workout/demo";
+import { demoWorkouts, isDemoFixture } from "@/lib/workout/demo";
 import { pickWorkout } from "@/lib/workout";
 
 // imapflow needs Node sockets, and the result must never be cached.
@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
 
   // Demo mode: the redacted fixture, no mailbox, no token. Nothing private in it.
   if (req.nextUrl.searchParams.get("demo") === "1") {
-    const days = demoWorkouts(date, { ftp, thr });
+    const fixture = req.nextUrl.searchParams.get("fixture");
+    const days = demoWorkouts(date, { ftp, thr, fixture: isDemoFixture(fixture) ? fixture : undefined });
     return NextResponse.json({ date, workout: pickWorkout(days, date), days, warnings: [], demo: true });
   }
 

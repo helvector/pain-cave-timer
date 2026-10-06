@@ -1,0 +1,8 @@
+# Never upload these to Vercel builds (the CLI uploads the working tree).
+.env
+.env.*
+!.env.example
+fixtures/raw/
+Assets/
+node_modules/
+.next/

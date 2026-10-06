@@ -54,6 +54,10 @@ export interface Block {
   cue: Cue;
   /** 1-based position within a repeat, e.g. interval 2 of 3. */
   set?: { index: number; count: number };
+  /** 1-based position inside a multi-step interval, e.g. step 3 of 4 of an over-under. */
+  part?: { index: number; count: number };
+  /** Blocks sharing an id came from one multi-step interval in the email. */
+  groupId?: number;
   notes?: string;
 }
 
@@ -93,6 +97,8 @@ export interface StepNode {
   notes?: string;
   /** Source line, for `unparsed` / warnings. */
   raw: string;
+  /** Set when the step is one of several inside a single interval (TrainingPeaks nested <ul>). */
+  group?: { id: number; part: number; parts: number };
 }
 
 export interface RepeatNode {

@@ -15,6 +15,8 @@ export interface RawDay {
   nodes: WorkoutNode[];
   unparsed: string[];
   warnings: string[];
+  /** Counter for multi-step interval groups within this day. */
+  groupSeq: number;
 }
 
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
@@ -41,7 +43,7 @@ export function extractDays(html: string, opts: TargetOptions = {}): RawDay[] {
 
     const title = text(container.querySelector("h2")) || "Untitled workout";
     const isRestDay = /^rest\s*day$/i.test(title);
-    const day: RawDay = { dateText, title, isRestDay, nodes: [], unparsed: [], warnings: [] };
+    const day: RawDay = { dateText, title, isRestDay, nodes: [], unparsed: [], warnings: [], groupSeq: 0 };
 
     // "Time" and "TSS" sit as <p>label</p><h3>value</h3> pairs.
     for (const p of container.querySelectorAll("p")) {
@@ -104,6 +106,33 @@ function parseList(ol: HTMLElement, day: RawDay, opts: TargetOptions): WorkoutNo
   const nodes: WorkoutNode[] = [];
   for (const li of ol.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "LI")) {
     const title = text(li.querySelector(".structureTitle")) || undefined;
+
+    // One interval made of several steps ("Ramp up in 4 steps" over-unders):
+    // TrainingPeaks puts each step in its own <li> under a nested <ul>.
+    const subList = li.querySelector("ul");
+    if (subList) {
+      const subItems = subList.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "LI");
+      const id = ++day.groupSeq;
+      subItems.forEach((sub, k) => {
+        const subSpans = sub.querySelectorAll("span").map((sp) => text(sp)).filter(Boolean);
+        const subNotes = subSpans.find((sp) => /^notes?\b/i.test(sp));
+        const subLine = subSpans.filter((sp) => sp !== subNotes).join(" ");
+        const { step, leftovers } = parseStepLine(subLine, opts, title);
+        if (!step) {
+          day.unparsed.push(`${title ?? ""}: ${subLine}`.trim());
+          return;
+        }
+        const node: StepNode = { ...step, notes: subNotes?.replace(/^notes?\s*[-:]?\s*/i, ""), group: { id, part: k + 1, parts: subItems.length } };
+        if (node.notes && !node.target.hrBpm && !node.target.hrPctThr) {
+          const hr = parseHeartRateTarget(node.notes, opts);
+          if (hr) node.target = { ...node.target, ...hr };
+        }
+        nodes.push(node);
+        day.unparsed.push(...leftovers.map((l) => `${title ?? ""}: ${l}`.trim()));
+      });
+      continue;
+    }
+
     const nested = li.querySelector("ol");
     const spans = li
       .querySelectorAll("span")

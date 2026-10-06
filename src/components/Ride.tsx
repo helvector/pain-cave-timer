@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
-import { clock, positionAt, wattsLabel, zoneLabel } from "@/lib/timer";
+import { clock, positionAt, positionLabel, wattsLabel, zoneLabel } from "@/lib/timer";
 import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
@@ -114,7 +114,7 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
       <RideBackground kind={b.kind} bpm={bpm} />
       <Blur key={`top-${pos.index}`} className="top" initialBlur={8} transition={{ duration: 0.35 }}>
         <span className="label">{zoneLabel(b)}</span>
-        <span>{b.set ? `${b.set.index} of ${b.set.count}` : `${pos.index + 1} / ${workout.blocks.length}`}</span>
+        <span>{positionLabel(b, workout.blocks.length)}</span>
       </Blur>
 
       <div className="main" onClick={togglePause} role="button" aria-label={pausedAt !== null ? "Resume" : "Pause"}>
