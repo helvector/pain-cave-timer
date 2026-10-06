@@ -63,6 +63,15 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
             <stop offset="1" stopColor={shade(ZONE_COLORS[z], 0.25)} />
           </linearGradient>
         ))}
+        {/*
+          Black glow under the heart-rate line, blurred on the vertical axis
+          only (stdDeviation x = 0) and with the filter region pinned to the
+          line's own width, so its left and right ends stay clean.
+          y blur is in chart units: 0.02 of the height ≈ 3 px on a phone.
+        */}
+        <filter id={`${clipId}-hr-glow`} x="0%" y="-60%" width="100%" height="220%">
+          <feGaussianBlur stdDeviation="0 0.02" />
+        </filter>
         {ridden !== undefined && (
           <clipPath id={clipId}>
             <rect x={0} y={0} width={ridden} height={1} />
@@ -82,6 +91,19 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, cla
           strokeOpacity={0.9}
           strokeWidth={1.5}
           vectorEffect="non-scaling-stroke"
+        />
+      )}
+      {hrD && (
+        <path
+          className="profile__hr-glow"
+          d={hrD}
+          fill="none"
+          stroke="#000"
+          strokeOpacity={0.85}
+          strokeWidth={5}
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+          filter={`url(#${clipId}-hr-glow)`}
         />
       )}
       {hrD && (

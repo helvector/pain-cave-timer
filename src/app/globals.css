@@ -167,7 +167,14 @@ p { margin: 0; line-height: 1.4; }
   line-height: 0.82;
   white-space: nowrap;
 }
-.ride .watts small { font-family: var(--font-ui), sans-serif; font-size: 0.32em; font-weight: 600; color: var(--muted); margin-left: 0.2em; }
+/*
+ * Matches the heart beside the heart rate. The heart is a 0.45em glyph lifted
+ * 0.55 of its own size, so it is ~0.3em tall, centred ~0.4em above the
+ * baseline, with a ~0.05em gap; the icon is sized in the number's em instead.
+ */
+/* Floats in the empty space above the countdown digits so pausing never pushes the layout. */
+.ride .paused-note { position: absolute; left: 0; right: 0; top: 0; margin: 0; text-align: center; font-size: 1.4rem; }
+.ride .watts__icon { display: inline-block; height: 0.32em; width: auto; vertical-align: 0.22em; margin-right: 0.06em; }
 .ride .hr {
   /* Same size and face as the watt target, in heart-rate red. */
   font-family: var(--font-display), var(--font-ui), sans-serif;
