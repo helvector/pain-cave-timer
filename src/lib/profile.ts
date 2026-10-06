@@ -151,5 +151,5 @@ export function shade(hex: string, amount: number): string {
   return `#${[16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Opacity of bars not yet ridden (was 0.22; +30%). Ridden bars are 1. */
-export const UNRIDDEN_OPACITY = 0.29;
+/** Opacity of bars not yet ridden; raised so the zone colours pop. Ridden bars are 1. */
+export const UNRIDDEN_OPACITY = 0.45;

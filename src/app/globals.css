@@ -135,7 +135,7 @@ p { margin: 0; line-height: 1.4; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(4px, 2vmin, 20px);
+  gap: clamp(2px, 1vmin, 10px); /* halved */
 }
 .ride .time {
   /* 5 cells ≈ 1.3em wide: fill ~85% of the width in portrait, ~45% of the height in landscape. */
@@ -145,9 +145,9 @@ p { margin: 0; line-height: 1.4; }
   display: flex;
   justify-content: center;
   align-items: center;
-  /* Trim the countdown's vertical footprint by 10% (0.05em off the empty
-     space above and below the figures); the digits themselves are unchanged. */
-  margin-block: -0.05em;
+  /* Trim the empty space above and below the figures (about half of it);
+     the digits themselves are unchanged. */
+  margin-block: -0.1em;
 }
 /*
  * Fixed cells so proportional digits do not jitter as the clock counts down.
@@ -164,10 +164,10 @@ p { margin: 0; line-height: 1.4; }
 .ride .watts {
   /* 2× the previous min(24vw, 16vh), capped so "220–235 W" (~2.2em in
      Balfron) still fits the width on a portrait phone. */
-  font-size: min(33.6vw, 22.4vh, calc((100vw - 48px) * 0.7 / 2.2)); /* 70% of the previous 2x size */
+  font-size: min(40.3vw, 26.9vh, calc((100vw - 48px) * 0.84 / 2.2)); /* +20% on the last size */
   /* Balfron figures fill ~0.67em of the line box; 0.82 trims the empty
      leading so time, watts and heart rate all fit a portrait phone. */
-  line-height: 0.82;
+  line-height: 0.75;
   white-space: nowrap;
 }
 /*
@@ -182,8 +182,8 @@ p { margin: 0; line-height: 1.4; }
   /* Same size and face as the watt target, in heart-rate red. */
   font-family: var(--font-display), var(--font-ui), sans-serif;
   font-weight: 400;
-  font-size: min(33.6vw, 22.4vh, calc((100vw - 48px) * 0.7 / 2.2)); /* 70% of the previous 2x size */
-  line-height: 0.82;
+  font-size: min(40.3vw, 26.9vh, calc((100vw - 48px) * 0.84 / 2.2)); /* +20% on the last size */
+  line-height: 0.75;
   color: #ff2b2b;
   text-align: center;
   white-space: nowrap;
@@ -256,7 +256,26 @@ p { margin: 0; line-height: 1.4; }
 }
 
 /* ---- workout profile (replaces the flat progress strip) ---------------- */
-.profile { display: block; width: 100%; overflow: visible; }
-.profile--ride { height: clamp(70px, 16.25vh, 188px); }
+.profile { display: block; width: 100%; position: relative; }
+.profile__svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.profile__playhead { position: absolute; top: 0; width: 2px; margin-left: -1px; background: #fff; pointer-events: none; }
+/* Chart band plus the reserved strip under the buttons, running to the bottom edge. */
+.profile--ride { height: calc(clamp(70px, 16.25vh, 188px) + var(--reserve, 88px)); }
+.ride-bottom {
+  position: relative;
+  margin-bottom: calc(-1 * max(16px, env(safe-area-inset-bottom)));
+}
+.ride-bottom .controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  padding-top: 0;
+}
+.ride-bottom .controls button {
+  background: rgba(0, 0, 0, 0.25); /* 25% black so labels read over the bars */
+  color: rgba(255, 255, 255, 0.8);
+}
+.ride-bottom .controls button:disabled { color: var(--muted); }
 .profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
 .profile rect { transition: fill-opacity 300ms ease; }
