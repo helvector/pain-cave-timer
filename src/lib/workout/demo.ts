@@ -18,6 +18,10 @@ const FIXTURES = {
     read: () => readFileSync(path.join(process.cwd(), "fixtures/trainingpeaks-overunder-3x16.html"), "utf8"),
     subject: "Schedule for Tuesday 10/06/2026 to Wednesday 10/07/2026",
   },
+  steadystate: {
+    read: () => readFileSync(path.join(process.cwd(), "fixtures/trainingpeaks-steadystate-4x8.html"), "utf8"),
+    subject: "Schedule for Tuesday 10/13/2026 to Wednesday 10/14/2026",
+  },
 } as const;
 
 export type DemoFixture = keyof typeof FIXTURES;

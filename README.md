@@ -47,9 +47,11 @@ fixtures/               redacted samples used by tests; fixtures/raw/ is gitigno
    `startSec`, and `cue` (`start` | `work` | `recovery`). The runtime never
    sees repeats, zones, or percentages.
 
-5. **Multi-step intervals** — an interval written as one list item with a
-   nested `<ul>` of steps (e.g. "Ramp up in 4 steps" over-unders) becomes one
-   block per step, tagged `part` ("step 2/4"). Two alternating targets are
+5. **Nested step lists** — TrainingPeaks puts several steps in one list item
+   via a nested `<ul>`. A "Repeat 4 times" item rides its steps 4 times over,
+   using each step's own label ("Steady State", "Recovery") and numbering them
+   "1 of 4" … "4 of 4". Any other title (e.g. "Ramp up in 4 steps"
+   over-unders) is one interval ridden once, one block per step, tagged `part` ("step 2/4"). Two alternating targets are
    labelled Under / Over, a step down plays the recovery cue, and repeated
    identical intervals get set numbers ("2 of 3") carried onto their recovery.
 
@@ -129,8 +131,8 @@ recovery blues, warm-up/cool-down greys) at reduced opacity so the numerals
 keep their contrast, and the whole field pulses once per heartbeat: the CSS
 animation period is 60 / BPM, so a changing rate re-times the loop without
 restarting it. With no strap it breathes slowly. The BPM readout sits under
-the watt target, matching it in size. Preview without a strap: `/?demo=1&bpm=142`; add `&fixture=overunder` for
-the over-under fixture.
+the watt target, matching it in size. Preview without a strap: `/?demo=1&bpm=142`; add `&fixture=overunder` or
+`&fixture=steadystate` for those fixtures.
 Reduced-motion users get the flat tint.
 
 ## Motion

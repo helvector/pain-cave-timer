@@ -84,6 +84,14 @@ function paragraphText(el: HTMLElement): string {
     .trim();
 }
 
+/** "Repeat 4 times", "4x", "4 sets", "Repeat 3" → the count; undefined otherwise. */
+export function parseRepeatCount(title: string | undefined): number | undefined {
+  if (!title) return undefined;
+  const m = title.match(/^\s*(?:repeat\s+(\d+)\s*(?:x|×|times?)?|(\d+)\s*(?:x|×|times|sets|rounds|reps))\s*$/i);
+  const n = m ? Number(m[1] ?? m[2]) : undefined;
+  return n && n > 1 ? n : undefined;
+}
+
 function isInside(el: HTMLElement, ancestor: HTMLElement): boolean {
   let cur: HTMLElement | null = el.parentNode;
   while (cur) {
@@ -107,29 +115,42 @@ function parseList(ol: HTMLElement, day: RawDay, opts: TargetOptions): WorkoutNo
   for (const li of ol.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "LI")) {
     const title = text(li.querySelector(".structureTitle")) || undefined;
 
-    // One interval made of several steps ("Ramp up in 4 steps" over-unders):
-    // TrainingPeaks puts each step in its own <li> under a nested <ul>.
+    // A nested <ul> of steps means one of two things, told apart by the title:
+    //  - "Repeat 4 times": the listed steps are ridden 4 times over;
+    //  - anything else ("Ramp up in 4 steps" over-unders): one interval made
+    //    of those steps, ridden once.
+    // Each sub-step may carry its own label span ("Steady State", "Recovery").
     const subList = li.querySelector("ul");
     if (subList) {
       const subItems = subList.childNodes.filter((n): n is HTMLElement => (n as HTMLElement).tagName === "LI");
-      const id = ++day.groupSeq;
+      const repeatCount = parseRepeatCount(title);
+      const id = repeatCount ? undefined : ++day.groupSeq;
+      const children: StepNode[] = [];
       subItems.forEach((sub, k) => {
         const subSpans = sub.querySelectorAll("span").map((sp) => text(sp)).filter(Boolean);
         const subNotes = subSpans.find((sp) => /^notes?\b/i.test(sp));
-        const subLine = subSpans.filter((sp) => sp !== subNotes).join(" ");
-        const { step, leftovers } = parseStepLine(subLine, opts, title);
+        // A leading span with no digits is the step's own label.
+        const label = subSpans[0] && !/\d/.test(subSpans[0]) ? subSpans[0] : undefined;
+        const subLine = subSpans.filter((sp) => sp !== subNotes && sp !== label).join(" ");
+        const { step, leftovers } = parseStepLine(subLine, opts, label ?? (repeatCount ? undefined : title));
         if (!step) {
           day.unparsed.push(`${title ?? ""}: ${subLine}`.trim());
           return;
         }
-        const node: StepNode = { ...step, notes: subNotes?.replace(/^notes?\s*[-:]?\s*/i, ""), group: { id, part: k + 1, parts: subItems.length } };
+        const node: StepNode = {
+          ...step,
+          notes: subNotes?.replace(/^notes?\s*[-:]?\s*/i, ""),
+          group: id === undefined ? undefined : { id, part: k + 1, parts: subItems.length },
+        };
         if (node.notes && !node.target.hrBpm && !node.target.hrPctThr) {
           const hr = parseHeartRateTarget(node.notes, opts);
           if (hr) node.target = { ...node.target, ...hr };
         }
-        nodes.push(node);
+        children.push(node);
         day.unparsed.push(...leftovers.map((l) => `${title ?? ""}: ${l}`.trim()));
       });
+      if (repeatCount) nodes.push({ type: "repeat", count: repeatCount, children, raw: title ?? "" });
+      else nodes.push(...children);
       continue;
     }
 
