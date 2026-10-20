@@ -1,28 +1,19 @@
 import type { ZoneCode } from "./workout/types";
+import { DEFAULT_SETTINGS, resolveZones, type PowerZone } from "./settings";
 
-/**
- * The rider's own power zones, in absolute watts (from the coach, Oct 2026).
- * Colours run cool to hot: light blue, green, yellow, yellow-orange, orange, red.
- * Update this table when the coach issues new zones; everything that colours
- * by zone (profile bars, confirmation dots) reads from here.
- */
-export const POWER_ZONES = [
-  { id: "recovery", name: "Recovery", lo: 0, hi: 145, color: "#6fc3ff" },
-  { id: "endurance", name: "Endurance", lo: 146, hi: 197, color: "#3ecf6e" },
-  { id: "tempo", name: "Tempo", lo: 198, hi: 236, color: "#ffd23f" },
-  { id: "threshold", name: "Threshold", lo: 237, hi: 275, color: "#ffaa2b" },
-  { id: "vo2max", name: "VO2 Max", lo: 276, hi: 314, color: "#ff6a1a" },
-  { id: "anaerobic", name: "Anaerobic Capacity", lo: 315, hi: 2000, color: "#ff3b30" },
-] as const;
+export type { PowerZone } from "./settings";
 
-export type PowerZoneId = (typeof POWER_ZONES)[number]["id"];
-export type PowerZone = (typeof POWER_ZONES)[number];
+/** Zone ids are fixed; names, tops and colours are editable on /admin. */
+export type PowerZoneId = "recovery" | "endurance" | "tempo" | "threshold" | "vo2max" | "anaerobic";
+
+/** The coach's zones (defaults until /admin saves others). */
+export const POWER_ZONES: PowerZone[] = resolveZones(DEFAULT_SETTINGS.zones);
 
 export const ZONE_COLORS = Object.fromEntries(POWER_ZONES.map((z) => [z.id, z.color])) as Record<PowerZoneId, string>;
 
 /** The zone a wattage falls in; boundaries belong to the lower zone (145 W is Recovery). */
-export function zoneForWatts(watts: number): PowerZone {
-  return POWER_ZONES.find((z) => watts <= z.hi) ?? POWER_ZONES[POWER_ZONES.length - 1];
+export function zoneForWatts(watts: number, zones: PowerZone[] = POWER_ZONES): PowerZone {
+  return zones.find((z) => watts <= z.hi) ?? zones[zones.length - 1];
 }
 
 /** Coach label codes mapped onto the rider's zones, for steps with no watt target. */

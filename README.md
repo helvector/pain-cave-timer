@@ -115,10 +115,15 @@ from the coach): Recovery 0–145 light blue, Endurance 146–197 green, Tempo
 198–236 yellow, Threshold 237–275 yellow-orange, VO2 Max 276–314 orange,
 Anaerobic 315+ red. The middle of a block's watt target picks its zone;
 blocks without watts fall back to %FTP × `FTP_WATTS`, then the coach's zone
-label, then the block kind. Update that table when the zones change. The height axis starts at a baseline
+label, then the block kind. Edit zones and colours at **/admin** (saved in a
+private Vercel Blob store as `settings.json`, defaults in `src/lib/settings.ts`;
+saving needs `APP_TOKEN`). "Calculate from FTP" fills zone tops at 55, 75, 90,
+105 and 120% of FTP, the TrainingPeaks formula the coach's table follows. The height axis starts at a baseline
 below the easiest block, as training apps do, so small target steps show.
-Ridden time is drawn at full strength with a playhead; the current block is
-outlined. With a heart-rate strap connected, a 2 px red line plots heart rate
+Ridden time is drawn at full strength; the current block pulses gently and a
+glowing "now" line sheds sparkles and vapour off its trailing edge
+(`PlayheadFx`, canvas; four styles in `src/lib/playhead-fx.ts`: Ember, Comet,
+Plasma, Stardust, chosen on /admin). Reduced motion gets a still line. With a heart-rate strap connected, a 2 px red line plots heart rate
 over the bars (one reading every 2 s, fixed 60–200 bpm scale with max HR at
 the top); it breaks on dropouts and across Skip/Back jumps, and pauses with
 the timer.
