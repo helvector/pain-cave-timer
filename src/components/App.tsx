@@ -7,6 +7,7 @@ import { Ride } from "./Ride";
 import { clock } from "@/lib/timer";
 import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { useHeartRate } from "@/hooks/use-heart-rate";
+import { PLAYHEAD_STYLES, type PlayheadStyle } from "@/lib/settings";
 
 const TOKEN_KEY = "pct.token";
 
@@ -40,6 +41,9 @@ export function App() {
 
   const params = useMemo(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)), []);
   const demo = params.get("demo") === "1";
+  // Demo only: ?fx=comet previews a "now" line style without saving it.
+  const fxParam = params.get("fx");
+  const fx = demo && PLAYHEAD_STYLES.includes(fxParam as PlayheadStyle) ? (fxParam as PlayheadStyle) : undefined;
   // Demo only: ?bpm=142 simulates a connected strap so the pulse can be previewed.
   const demoBpm = demo && params.get("bpm") ? Number(params.get("bpm")) : undefined;
   const [simBpm, setSimBpm] = useState<number>();
@@ -150,6 +154,7 @@ export function App() {
       <Ride
         workout={phase.workout}
         bpm={liveBpm}
+        playhead={fx}
         onDone={(elapsedSec) => setPhase({ name: "done", workout: phase.workout, elapsedSec })}
         onExit={reload}
       />

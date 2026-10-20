@@ -26,6 +26,8 @@ interface Props {
   zones?: PowerZone[];
   /** Override the saved "now" line style. */
   playhead?: PlayheadStyle;
+  /** 0..1 from heart rate (resting → max): how hard the current block pulses and the line sparks. */
+  intensity?: number;
   className?: string;
 }
 
@@ -35,7 +37,7 @@ interface Props {
  * dimmed; the current block pulses and a glowing line marks "now". SVG scaled with preserveAspectRatio="none"
  * so it fills any width; strokes keep their pixel width.
  */
-export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, zones: zonesProp, playhead, className }: Props) {
+export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, zones: zonesProp, playhead, intensity = 0.25, className }: Props) {
   const saved = useSettings();
   const zoneSet = zonesProp ?? saved.zones;
   const style = playhead ?? saved.settings.playhead;
@@ -74,7 +76,11 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
     ));
 
   const cur = currentIndex !== undefined ? bars[currentIndex] : undefined;
-  const hrD = useMemo(() => (hr?.length ? hrPath(hr) : ""), [hr]);
+  const { hrRest, hrMax } = saved.settings;
+  const hrD = useMemo(() => (hr?.length ? hrPath(hr, { lo: hrRest, hi: hrMax }) : ""), [hr, hrRest, hrMax]);
+  // Pulse: 2.6 s and soft at rest → 0.7 s and strong at max (quantised so the animation is not restarted every beat).
+  const level = Math.round(Math.min(1, Math.max(0, intensity)) * 10) / 10;
+  const pulseStyle = { "--pulse-dur": `${(2.6 - 1.9 * level).toFixed(2)}s`, "--pulse-peak": (0.35 + 0.5 * level).toFixed(2) } as React.CSSProperties;
 
   return (
     <div ref={svgRef} className={`profile ${className ?? ""}`}>
@@ -120,6 +126,7 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
         // The block being ridden breathes gently instead of wearing an outline.
         <rect
           className="profile__pulse"
+          style={pulseStyle}
           x={cur.x + gap / 2}
           y={base * (1 - cur.height)}
           width={Math.max(cur.width - gap, gap)}
@@ -157,7 +164,13 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
     </svg>
     {ridden !== undefined && (
       // The glowing "now" line with sparkles and vapour trailing off its left edge.
-      <PlayheadFx x={ridden / total} band={base} variant={style} color={cur ? cur.color : "#ffffff"} />
+      <PlayheadFx
+        x={ridden / total}
+        top={cur ? base * (1 - cur.height) : 0}
+        variant={style}
+        color={cur ? cur.color : "#ffffff"}
+        intensity={level}
+      />
     )}
     </div>
   );

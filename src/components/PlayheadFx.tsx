@@ -7,15 +7,19 @@ import type { PlayheadStyle } from "@/lib/settings";
 interface Props {
   /** Line position as a fraction of the width (0..1). */
   x: number;
-  /** Line height as a fraction of the canvas height (0..1). */
-  band: number;
+  /** Where the line starts, as a fraction of the canvas height (top of the current bar); it runs to the bottom. */
+  top: number;
+  /** 0..1 from heart rate: drives particle density, speed, size and glow. */
+  intensity: number;
   variant: PlayheadStyle;
   /** Current zone colour, used for the glow. */
   color: string;
 }
 
 /**
- * Canvas overlay that draws the glowing "now" line with sparkles and vapour.
+ * Canvas overlay that draws the black "now" line, from the top of the current
+ * bar to the bottom of the screen, with sparkles and vapour that intensify
+ * with heart rate.
  * One animation loop for the component's life; it reads the latest props
  * from a ref, so time ticks and style changes never restart it.
  */
@@ -52,7 +56,8 @@ export function PlayheadFx(props: Props) {
       last = now;
       ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
       if (p.x > 0 && p.x < 1) {
-        PLAYHEAD_DRAW[p.variant]({ ctx, px: p.x * canvas.clientWidth, ph: p.band * canvas.clientHeight, dt, t: now / 1000, color: p.color, parts, owed, reduce });
+        const h = canvas.clientHeight;
+        PLAYHEAD_DRAW[p.variant]({ ctx, px: p.x * canvas.clientWidth, y0: p.top * h, y1: h, dt, t: now / 1000, color: p.color, intensity: p.intensity, parts, owed, reduce });
       }
       raf = requestAnimationFrame(frame);
     };
