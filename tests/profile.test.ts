@@ -1,25 +1,34 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { addHrSample, blockZone, hrPath, profileBars, shade, tint, ZONE_COLORS, type HrSample } from "../src/lib/profile";
+import { addHrSample, blockZone, hrPath, POWER_ZONES, profileBars, shade, tint, ZONE_COLORS, zoneForWatts, type HrSample } from "../src/lib/profile";
 
 const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunder-3x16.html", "utf8"), {
   subject: "Schedule for Tuesday 10/06/2026 to Wednesday 10/07/2026",
 }).days[0];
 
-describe("blockZone", () => {
-  it("uses the coach's zone label; Tempo-Threshold is under threshold", () => {
-    // Warm up "Recovery-Endurance", Under "Tempo-Threshold", Over "Threshold".
-    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["Z2", "SS", "Z4", "SS"]);
-    expect(blockZone(ou.blocks[5])).toBe("Z1"); // plain Recovery stays green
-    expect(blockZone({ ...ou.blocks[0], target: { raw: "", zone: { label: "Endurance-Tempo", codes: ["Z2", "Z3"] } } })).toBe("Z2");
+describe("blockZone (rider's power zones)", () => {
+  it("colours by the middle of the watt target", () => {
+    // Warm up 138-188 (163), Under 220-235 (227.5), Over 240-250 (245), Recovery 3-135 (69).
+    expect(ou.blocks.slice(0, 4).map((b) => blockZone(b))).toEqual(["endurance", "tempo", "threshold", "tempo"]);
+    expect(blockZone(ou.blocks[5])).toBe("recovery");
   });
-  it("falls back to %FTP, then watts vs FTP, then kind", () => {
+  it("falls back to %FTP with FTP, then the coach's label, then the kind", () => {
     const base = { ...ou.blocks[1], target: { raw: "" } };
-    expect(blockZone({ ...base, target: { raw: "", ftpPct: { lo: 106, hi: 120 } } })).toBe("Z5");
-    expect(blockZone({ ...base, target: { raw: "", watts: { lo: 180, hi: 200 } } }, 250)).toBe("Z3");
-    expect(blockZone(base)).toBe("Z4");
+    expect(blockZone({ ...base, target: { raw: "", ftpPct: { lo: 106, hi: 120 } } }, 260)).toBe("vo2max"); // mid 113% × 260 = 293.8 W
+    expect(blockZone({ ...base, target: { raw: "", zone: { label: "Endurance-Tempo", codes: ["Z2", "Z3"] } } })).toBe("endurance");
+    expect(blockZone({ ...base, target: { raw: "", zone: { label: "Recovery-Endurance", codes: ["Z1", "Z2"] } } })).toBe("endurance");
+    expect(blockZone({ ...base, target: { raw: "", zone: { label: "VO2max", codes: ["Z5"] } } })).toBe("vo2max");
+    expect(blockZone(base)).toBe("threshold");
   });
+});
+
+describe("zoneForWatts", () => {
+  it.each([
+    [0, "recovery"], [145, "recovery"], [146, "endurance"], [197, "endurance"], [198, "tempo"],
+    [236, "tempo"], [237, "threshold"], [275, "threshold"], [276, "vo2max"], [314, "vo2max"],
+    [315, "anaerobic"], [900, "anaerobic"], [5000, "anaerobic"],
+  ])("%d W → %s", (w, id) => expect(zoneForWatts(w).id).toBe(id));
 });
 
 describe("profileBars", () => {
@@ -38,16 +47,16 @@ describe("profileBars", () => {
     expect(rec.height).toBeGreaterThanOrEqual(0.12);
     expect(rec.height).toBeLessThan(warm.height);
     expect(warm.height).toBeLessThan(under.height);
-    expect([under.color, over.color, rec.color]).toEqual([ZONE_COLORS.SS, ZONE_COLORS.Z4, ZONE_COLORS.Z1]);
+    expect([under.color, over.color, rec.color]).toEqual([ZONE_COLORS.tempo, ZONE_COLORS.threshold, ZONE_COLORS.recovery]);
   });
 });
 
 describe("zone palette", () => {
-  it("runs green, blue, yellow, yellow-orange, deep orange, then reds", () => {
-    expect(ZONE_COLORS).toEqual({
-      Z1: "#3ecf6e", Z2: "#3a8ee6", Z3: "#ffd23f", SS: "#ffaa2b",
-      Z4: "#ff6a1a", Z5: "#ff3b30", Z6: "#d61f2c", Z7: "#a3122a",
-    });
+  it("runs light blue, green, yellow, yellow-orange, orange, red", () => {
+    expect(POWER_ZONES.map((z) => [z.name, z.lo, z.hi, z.color])).toEqual([
+      ["Recovery", 0, 145, "#6fc3ff"], ["Endurance", 146, 197, "#3ecf6e"], ["Tempo", 198, 236, "#ffd23f"],
+      ["Threshold", 237, 275, "#ffaa2b"], ["VO2 Max", 276, 314, "#ff6a1a"], ["Anaerobic Capacity", 315, 2000, "#ff3b30"],
+    ]);
   });
 });
 

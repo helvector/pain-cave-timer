@@ -1,62 +1,41 @@
 import type { Block, ZoneCode } from "./workout/types";
-import { ZONES } from "./workout/zones";
+import { topZone, ZONES } from "./workout/zones";
+import { CODE_TO_ZONE, ZONE_COLORS, zoneForWatts, type PowerZoneId } from "./power-zones";
 
-/**
- * Zone colours for the workout profile, cool to hot:
- * recovery green, endurance mid blue, tempo yellow, under threshold
- * yellow-orange, threshold deep orange, then reds above threshold.
- */
-export const ZONE_COLORS: Record<ZoneCode, string> = {
-  Z1: "#3ecf6e", // recovery: green
-  Z2: "#3a8ee6", // endurance: mid blue
-  Z3: "#ffd23f", // tempo: yellow
-  SS: "#ffaa2b", // under threshold / sweet spot: yellow-orange
-  Z4: "#ff6a1a", // threshold (the overs): deep orange
-  Z5: "#ff3b30", // VO2max: red
-  Z6: "#d61f2c", // anaerobic: deeper red
-  Z7: "#a3122a", // neuromuscular: crimson
-};
+export { POWER_ZONES, ZONE_COLORS, zoneForWatts, type PowerZoneId } from "./power-zones";
 
 const ORDER: ZoneCode[] = ["Z1", "Z2", "Z3", "SS", "Z4", "Z5", "Z6", "Z7"];
 
-function zoneForPct(pct: number): ZoneCode {
-  // Highest zone whose lower bound the target reaches (sweet spot excluded:
-  // it overlaps Z3/Z4 and only applies when the coach names it).
-  let best: ZoneCode = "Z1";
-  for (const z of ORDER) if (z !== "SS" && pct >= ZONES[z].ftpPct.lo) best = z;
-  return best;
-}
-
 /**
- * Which zone colours a block. The coach's own zone label wins (TrainingPeaks
- * writes one on every step); then %FTP; then watts against FTP; then a
- * guess from the block kind so nothing renders colourless.
+ * Which of the rider's power zones colours a block: the middle of the watt
+ * target decides it (220–235 W is Tempo, 240–250 W is Threshold). Without
+ * watts, a %FTP target is converted with FTP; failing that the coach's zone
+ * label is mapped across ("Recovery-Endurance" warm-ups count as endurance;
+ * other spans take their lower zone); last resort is the block kind.
  */
-export function blockZone(block: Block, ftp?: number): ZoneCode {
-  // "Tempo-Threshold" is just under threshold: its own yellow-orange, so the
-  // unders read apart from both tempo and the "Threshold" overs. A span that
-  // includes recovery ("Recovery-Endurance" warm-ups) is endurance riding, so
-  // recovery is dropped from it; any other span takes its lower zone.
+export function blockZone(block: Block, ftp?: number): PowerZoneId {
+  const w = block.target.watts;
+  if (w) return zoneForWatts((w.lo + w.hi) / 2).id;
+  const pct = block.target.ftpPct;
+  if (pct && ftp) return zoneForWatts((((pct.lo + pct.hi) / 2) * ftp) / 100).id;
   const all = block.target.zone?.codes ?? [];
-  if (all.includes("Z3") && all.includes("Z4")) return "SS";
   const codes = all.length > 1 ? all.filter((c) => c !== "Z1") : all;
   const named = codes.length ? codes.reduce((lo, c) => (ORDER.indexOf(c) < ORDER.indexOf(lo) ? c : lo)) : undefined;
-  if (named) return named;
-  if (block.target.ftpPct) return zoneForPct(block.target.ftpPct.hi);
-  if (block.target.watts && ftp) return zoneForPct((block.target.watts.hi / ftp) * 100);
-  return { work: "Z4", recovery: "Z1", warmup: "Z2", cooldown: "Z2" }[block.kind] as ZoneCode;
+  if (named) return CODE_TO_ZONE[named];
+  return ({ work: "threshold", recovery: "recovery", warmup: "endurance", cooldown: "endurance" } as const)[block.kind];
 }
 
 /**
  * Bar height for a block, in watts. Uses the top of the target range so the
  * profile reads like the coach's chart; steps with no watt target fall back
- * to their zone's midpoint against FTP, or a low placeholder.
+ * to %FTP or the coach's zone against FTP, or a low placeholder.
  */
 export function blockHeight(block: Block, ftp?: number): number {
   const w = block.target.watts;
   if (w) return w.hi;
-  const pct = block.target.ftpPct ?? ZONES[blockZone(block, ftp)].ftpPct;
-  return ftp ? (pct.hi / 100) * ftp : 0;
+  const code = block.target.zone ? topZone(block.target.zone.codes) : undefined;
+  const pct = block.target.ftpPct ?? (code ? ZONES[code].ftpPct : undefined);
+  return ftp && pct ? (pct.hi / 100) * ftp : 0;
 }
 
 export interface ProfileBar {
@@ -66,7 +45,7 @@ export interface ProfileBar {
   /** 0..1 of the chart height. */
   height: number;
   color: string;
-  zone: ZoneCode;
+  zone: PowerZoneId;
 }
 
 /** Geometry for the profile chart, in seconds along x and 0..1 along y. */
