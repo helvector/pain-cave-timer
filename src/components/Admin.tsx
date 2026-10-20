@@ -1,0 +1,182 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import type { Workout } from "@/lib/workout/types";
+import {
+  DEFAULT_SETTINGS, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
+  type PlayheadStyle, type Settings,
+} from "@/lib/settings";
+import { useSettings } from "./SettingsProvider";
+import { WorkoutProfile } from "./WorkoutProfile";
+
+const TOKEN_KEY = "pct.token";
+const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; } };
+
+/** /admin: edit power zones (coach's table), zone colours, and the "now" line style. */
+export function Admin() {
+  const { settings } = useSettings();
+  // Remount the editor when the server copy arrives so the draft starts from it.
+  return <Editor key={settings.updatedAt ?? "local"} initial={settings} />;
+}
+
+function Editor({ initial }: { initial: Settings }) {
+  const { apply } = useSettings();
+  const [draft, setDraft] = useState<Settings>(initial);
+  const [ftp, setFtp] = useState(initial.ftp ? String(initial.ftp) : "");
+  const [token, setToken] = useState(readToken);
+  const [status, setStatus] = useState<{ kind: "ok" | "error" | "busy"; text: string }>();
+  const [sample, setSample] = useState<Workout>();
+  const [clock, setClock] = useState(0);
+
+  // A real session to preview with: last week's over-unders (every zone up to threshold).
+  useEffect(() => {
+    let off = false;
+    void fetch("/api/workout?demo=1&fixture=overunder", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (!off) setSample(d.workout); })
+      .catch(() => undefined);
+    return () => { off = true; };
+  }, []);
+  // Sweep the preview playhead through the session: one ride-minute per second.
+  useEffect(() => {
+    const id = setInterval(() => setClock((c) => c + 0.1), 100);
+    return () => clearInterval(id);
+  }, []);
+
+  const zones = useMemo(() => resolveZones(draft.zones), [draft.zones]);
+  const check = useMemo(() => validateSettings({ ...draft, ftp: ftp || undefined }), [draft, ftp]);
+  const elapsed = sample ? (clock * 60) % sample.totalSec : 0;
+  const current = sample?.blocks.findIndex((b) => elapsed >= b.startSec && elapsed < b.startSec + b.durationSec) ?? -1;
+  const dirty = JSON.stringify({ z: draft.zones, p: draft.playhead }) !== JSON.stringify({ z: initial.zones, p: initial.playhead });
+
+  const setZone = (i: number, patch: Partial<Settings["zones"][number]>) =>
+    setDraft((d) => ({ ...d, zones: d.zones.map((z, k) => (k === i ? { ...z, ...patch } : z)) }));
+
+  const calculate = () => {
+    const f = Number(ftp);
+    if (!(f > 50 && f < 1000)) { setStatus({ kind: "error", text: "Enter an FTP between 50 and 1000 W." }); return; }
+    const tops = zoneTopsFromFtp(f);
+    setDraft((d) => ({ ...d, zones: d.zones.map((z, i) => ({ ...z, hi: tops[i] })) }));
+    setStatus({ kind: "ok", text: `Zones calculated from ${f} W. Adjust any number, then save.` });
+  };
+
+  const save = async () => {
+    if (!check.ok) { setStatus({ kind: "error", text: check.error }); return; }
+    if (!token.trim()) { setStatus({ kind: "error", text: "Enter your access token to save." }); return; }
+    setStatus({ kind: "busy", text: "Saving…" });
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.trim()}` },
+        body: JSON.stringify(check.settings),
+      });
+      const body = await res.json();
+      if (!res.ok) { setStatus({ kind: "error", text: res.status === 401 ? "That token was rejected." : body.error ?? `HTTP ${res.status}` }); return; }
+      try { localStorage.setItem(TOKEN_KEY, token.trim()); } catch { /* private mode */ }
+      apply(body);
+      setStatus({ kind: "ok", text: "Saved. Every device picks this up the next time the app loads." });
+    } catch (err) {
+      setStatus({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
+  const preview = (style: PlayheadStyle, className: string) =>
+    sample ? (
+      <WorkoutProfile workout={sample} elapsedSec={elapsed} currentIndex={current >= 0 ? current : undefined} zones={zones} playhead={style} className={className} />
+    ) : (
+      <div className={`profile ${className} admin__loading`}>Loading sample…</div>
+    );
+
+  return (
+    <main className="screen admin">
+      <div className="stack admin__wrap">
+        <header className="admin__header">
+          <h1>Settings</h1>
+          <Link href="/" className="muted">← Back to today</Link>
+        </header>
+
+        <section className="admin__section">
+          <h2>Power zones</h2>
+          <p className="muted small">
+            Same table as your coach sends. Each zone starts one watt above the one before. Tap a swatch to change its colour.
+          </p>
+          <table className="zones">
+            <tbody>
+              {zones.map((z, i) => (
+                <tr key={z.id}>
+                  <td className="zones__swatch">
+                    <input type="color" value={draft.zones[i].color} onChange={(e) => setZone(i, { color: e.target.value })} aria-label={`${z.name} colour`} />
+                  </td>
+                  <td>
+                    <input className="zones__name" value={draft.zones[i].name} onChange={(e) => setZone(i, { name: e.target.value })} aria-label={`Zone ${i + 1} name`} />
+                  </td>
+                  <td className="zones__range">
+                    <span className="zones__lo">{z.lo.toLocaleString()}</span>
+                    <span className="muted">–</span>
+                    <input
+                      className="zones__hi" type="number" inputMode="numeric" min={z.lo + 1} value={draft.zones[i].hi}
+                      onChange={(e) => setZone(i, { hi: Number(e.target.value) })} aria-label={`${z.name} top, watts`}
+                    />
+                    <span className="muted">watts</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="admin__ftp">
+            <label>
+              <span className="muted small">Calculate from FTP</span>
+              <span className="row">
+                <input type="number" inputMode="numeric" placeholder="e.g. 262" value={ftp} onChange={(e) => setFtp(e.target.value)} aria-label="FTP in watts" />
+                <button onClick={calculate}>Calculate zones</button>
+              </span>
+            </label>
+            <p className="muted small">
+              Zone tops at {ZONE_TOP_PCTS.map((p) => `${Math.round(p * 100)}%`).join(", ")} of FTP, the standard TrainingPeaks power
+              zones your coach&apos;s table follows. His numbers match an FTP of about 262 W; adjust any number by hand after.
+            </p>
+          </div>
+        </section>
+
+        <section className="admin__section">
+          <h2>Preview</h2>
+          <div className="admin__preview">{preview(draft.playhead, "profile--admin-main")}</div>
+        </section>
+
+        <section className="admin__section">
+          <h2>&ldquo;Now&rdquo; line</h2>
+          <p className="muted small">The current block pulses; this line marks where you are. Pick one.</p>
+          <div className="fx-grid" role="radiogroup" aria-label="Now line style">
+            {PLAYHEAD_STYLES.map((s) => (
+              <button
+                key={s} role="radio" aria-checked={draft.playhead === s}
+                className={`fx-card${draft.playhead === s ? " fx-card--on" : ""}`}
+                onClick={() => setDraft((d) => ({ ...d, playhead: s }))}
+              >
+                <div className="fx-card__chart">{preview(s, "profile--admin-card")}</div>
+                <span className="fx-card__name">{PLAYHEAD_LABELS[s].name}</span>
+                <span className="muted small">{PLAYHEAD_LABELS[s].blurb}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="admin__section admin__save">
+          <label className="admin__token">
+            <span className="muted small">Access token (needed to save)</span>
+            <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="token" />
+          </label>
+          <div className="row">
+            <button className="primary" onClick={save} disabled={status?.kind === "busy"}>Save</button>
+            <button onClick={() => { setDraft(DEFAULT_SETTINGS); setFtp(""); setStatus({ kind: "ok", text: "Reset to your coach's Oct 2026 zones. Save to keep." }); }}>Reset to coach&apos;s zones</button>
+            {dirty && <span className="muted small">Unsaved changes</span>}
+          </div>
+          {!check.ok && <p className="notice">{check.error}</p>}
+          {status && <p className={status.kind === "error" ? "notice" : "muted"}>{status.text}</p>}
+        </section>
+      </div>
+    </main>
+  );
+}

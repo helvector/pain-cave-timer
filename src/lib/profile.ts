@@ -1,8 +1,13 @@
 import type { Block, ZoneCode } from "./workout/types";
 import { topZone, ZONES } from "./workout/zones";
-import { CODE_TO_ZONE, ZONE_COLORS, zoneForWatts, type PowerZoneId } from "./power-zones";
+import { CODE_TO_ZONE, POWER_ZONES, zoneForWatts, type PowerZone, type PowerZoneId } from "./power-zones";
 
-export { POWER_ZONES, ZONE_COLORS, zoneForWatts, type PowerZoneId } from "./power-zones";
+export { POWER_ZONES, ZONE_COLORS, zoneForWatts, type PowerZone, type PowerZoneId } from "./power-zones";
+
+/** Colour for a zone id within a zone set (edited zones from /admin, or the defaults). */
+export function zoneColor(id: string, zones: PowerZone[] = POWER_ZONES): string {
+  return zones.find((z) => z.id === id)?.color ?? "#888888";
+}
 
 const ORDER: ZoneCode[] = ["Z1", "Z2", "Z3", "SS", "Z4", "Z5", "Z6", "Z7"];
 
@@ -13,11 +18,11 @@ const ORDER: ZoneCode[] = ["Z1", "Z2", "Z3", "SS", "Z4", "Z5", "Z6", "Z7"];
  * label is mapped across ("Recovery-Endurance" warm-ups count as endurance;
  * other spans take their lower zone); last resort is the block kind.
  */
-export function blockZone(block: Block, ftp?: number): PowerZoneId {
+export function blockZone(block: Block, ftp?: number, zones: PowerZone[] = POWER_ZONES): PowerZoneId {
   const w = block.target.watts;
-  if (w) return zoneForWatts((w.lo + w.hi) / 2).id;
+  if (w) return zoneForWatts((w.lo + w.hi) / 2, zones).id as PowerZoneId;
   const pct = block.target.ftpPct;
-  if (pct && ftp) return zoneForWatts((((pct.lo + pct.hi) / 2) * ftp) / 100).id;
+  if (pct && ftp) return zoneForWatts((((pct.lo + pct.hi) / 2) * ftp) / 100, zones).id as PowerZoneId;
   const all = block.target.zone?.codes ?? [];
   const codes = all.length > 1 ? all.filter((c) => c !== "Z1") : all;
   const named = codes.length ? codes.reduce((lo, c) => (ORDER.indexOf(c) < ORDER.indexOf(lo) ? c : lo)) : undefined;
@@ -49,7 +54,7 @@ export interface ProfileBar {
 }
 
 /** Geometry for the profile chart, in seconds along x and 0..1 along y. */
-export function profileBars(blocks: Block[], ftp?: number): ProfileBar[] {
+export function profileBars(blocks: Block[], ftp?: number, zones: PowerZone[] = POWER_ZONES): ProfileBar[] {
   const heights = blocks.map((b) => blockHeight(b, ftp));
   const max = Math.max(...heights, 1);
   // Like a training-app chart, the axis starts above zero so a 235 W under and
@@ -59,7 +64,7 @@ export function profileBars(blocks: Block[], ftp?: number): ProfileBar[] {
   const min = positive.length ? Math.min(...positive) : 0;
   const floor = Math.min(min * 0.6, max * 0.45);
   return blocks.map((b, i) => {
-    const zone = blockZone(b, ftp);
+    const zone = blockZone(b, ftp, zones);
     const raw = heights[i] > 0 ? (heights[i] - floor) / (max - floor || 1) : 0.18;
     return {
       index: b.index,
@@ -67,7 +72,7 @@ export function profileBars(blocks: Block[], ftp?: number): ProfileBar[] {
       width: b.durationSec,
       // Keep a visible floor so easy blocks never vanish.
       height: Math.max(0.12, Math.min(1, raw)) * 0.92,
-      color: ZONE_COLORS[zone],
+      color: zoneColor(zone, zones),
       zone,
     };
   });

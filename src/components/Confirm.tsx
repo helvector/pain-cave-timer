@@ -6,7 +6,8 @@ import { Fades } from "@/components/animate-ui/primitives/effects/fade";
 import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/primitives/buttons/ripple";
 import type { HeartRateState } from "@/hooks/use-heart-rate";
 import { WorkoutProfile } from "./WorkoutProfile";
-import { blockZone, POWER_ZONES, ZONE_COLORS } from "@/lib/profile";
+import { blockZone, zoneColor } from "@/lib/profile";
+import { useSettings } from "./SettingsProvider";
 
 interface Props {
   result: { date: string; days: Workout[]; warnings: string[]; demo?: boolean; email?: { subject: string } };
@@ -24,6 +25,7 @@ function niceDate(iso: string): string {
 
 /** One screen, read once, then Start. Everything the parser was unsure about is shown here. */
 export function Confirm({ result, selected, onSelect, onStart, onReload, heartRate }: Props) {
+  const { zones } = useSettings();
   const days = Array.from(new Map(result.days.map((d) => [d.date, d])).values()).sort((a, b) => a.date.localeCompare(b.date));
   const w = selected;
   const issues = [...w.warnings, ...w.unparsed.map((u) => `Not understood: ${u}`), ...result.warnings];
@@ -73,7 +75,7 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
                 <tr key={b.index}>
                   <td className="num">{b.index + 1}</td>
                   <td>
-                    <span className="kind" style={{ background: ZONE_COLORS[blockZone(b)] }} title={POWER_ZONES.find((z) => z.id === blockZone(b))?.name} aria-hidden />
+                    <span className="kind" style={{ background: zoneColor(blockZone(b, undefined, zones), zones) }} title={zones.find((z) => z.id === blockZone(b, undefined, zones))?.name} aria-hidden />
                     {zoneLabel(b)}
                     {b.set && <span className="set">{b.set.index} of {b.set.count}</span>}
                     {b.part && <span className="set">step {b.part.index}/{b.part.count}</span>}

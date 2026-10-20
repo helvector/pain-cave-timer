@@ -258,7 +258,16 @@ p { margin: 0; line-height: 1.4; }
 /* ---- workout profile (replaces the flat progress strip) ---------------- */
 .profile { display: block; width: 100%; position: relative; }
 .profile__svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.profile__playhead { position: absolute; top: 0; width: 2px; margin-left: -1px; background: #fff; pointer-events: none; }
+.profile__fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Current block: a slow, gentle brightening in place of an outline. */
+.profile__pulse { animation: block-pulse 2.6s ease-in-out infinite; mix-blend-mode: screen; }
+@keyframes block-pulse {
+  0%, 100% { fill-opacity: 0.05; }
+  50% { fill-opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile__pulse { animation: none; fill-opacity: 0.3; }
+}
 /* Chart band plus the reserved strip under the buttons, running to the bottom edge. */
 /* Taller chart band (was 16.25vh) so it takes the dead space around the type. */
 .profile--ride { height: calc(clamp(90px, 24vh, 260px) + var(--reserve, 88px)); }
@@ -280,3 +289,32 @@ p { margin: 0; line-height: 1.4; }
 .ride-bottom .controls button:disabled { color: var(--muted); }
 .profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
 .profile rect { transition: fill-opacity 300ms ease; }
+
+/* ---- admin -------------------------------------------------------------- */
+.admin { align-items: center; }
+.admin__wrap { max-width: 760px; gap: 28px; }
+.admin__header { display: flex; justify-content: space-between; align-items: baseline; }
+.admin__header a { text-decoration: none; }
+.admin h2 { font-family: var(--font-display), var(--font-ui), sans-serif; font-weight: 400; font-size: 1.5rem; margin: 0 0 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+.small { font-size: 0.9rem; }
+.admin__section { display: flex; flex-direction: column; gap: 10px; }
+.zones { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
+.zones td { padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.zones__swatch { width: 44px; }
+.zones__swatch input { width: 36px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; cursor: pointer; }
+.zones__name { width: 100%; }
+.zones__range { white-space: nowrap; display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.zones__lo { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.zones__hi { width: 5.2em; text-align: right; }
+.admin input[type="number"], .admin .zones__name { padding: 8px 10px; }
+.admin__ftp label { display: flex; flex-direction: column; gap: 6px; }
+.admin__ftp input { width: 8em; }
+.admin__preview, .fx-card__chart { background: var(--bg-work); border-radius: 12px; overflow: hidden; padding: 12px 12px 0; }
+.profile--admin-main { height: 180px; }
+.profile--admin-card { height: 120px; }
+.admin__loading { display: grid; place-items: center; color: var(--muted); }
+.fx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.fx-card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px; border-radius: 14px; }
+.fx-card--on { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
+.fx-card__name { font-weight: 600; }
+.admin__token { display: flex; flex-direction: column; gap: 6px; max-width: 360px; }

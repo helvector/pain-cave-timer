@@ -2,13 +2,16 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
-import { hrPath, profileBars, shade, tint, UNRIDDEN_OPACITY, ZONE_COLORS, type HrSample } from "@/lib/profile";
+import { hrPath, profileBars, shade, tint, UNRIDDEN_OPACITY, zoneColor, type HrSample, type PowerZone } from "@/lib/profile";
+import type { PlayheadStyle } from "@/lib/settings";
+import { useSettings } from "./SettingsProvider";
+import { PlayheadFx } from "./PlayheadFx";
 
 interface Props {
   workout: Workout;
   /** Seconds ridden so far; everything left of this is lit. Omit for an unridden preview. */
   elapsedSec?: number;
-  /** Index of the block being ridden, drawn with an outline. */
+  /** Index of the block being ridden; it gently pulses. */
   currentIndex?: number;
   ftp?: number;
   /** Heart-rate readings to draw as a red line over the bars. */
@@ -19,16 +22,23 @@ interface Props {
    * themselves keep drawing down through it to the bottom edge.
    */
   reservePx?: number;
+  /** Override the saved zones (the admin page previews unsaved edits). */
+  zones?: PowerZone[];
+  /** Override the saved "now" line style. */
+  playhead?: PlayheadStyle;
   className?: string;
 }
 
 /**
  * The session's shape: one bar per block, width = duration, height = target
  * watts, colour = power zone. Ridden time is drawn at full strength, the rest
- * dimmed, with a playhead at "now". SVG scaled with preserveAspectRatio="none"
+ * dimmed; the current block pulses and a glowing line marks "now". SVG scaled with preserveAspectRatio="none"
  * so it fills any width; strokes keep their pixel width.
  */
-export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, className }: Props) {
+export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, zones: zonesProp, playhead, className }: Props) {
+  const saved = useSettings();
+  const zoneSet = zonesProp ?? saved.zones;
+  const style = playhead ?? saved.settings.playhead;
   const svgRef = useRef<HTMLDivElement>(null);
   const [heightPx, setHeightPx] = useState(0);
   useEffect(() => {
@@ -42,7 +52,7 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
   const bleed = Boolean(reservePx && heightPx);
   const base = bleed ? Math.max(0.3, 1 - reservePx! / heightPx) : 1;
   const clipId = useId().replace(/:/g, "");
-  const bars = useMemo(() => profileBars(workout.blocks, ftp), [workout.blocks, ftp]);
+  const bars = useMemo(() => profileBars(workout.blocks, ftp, zoneSet), [workout.blocks, ftp, zoneSet]);
   const total = Math.max(workout.totalSec, 1);
   const gap = total * 0.0025;
   const ridden = elapsedSec === undefined ? undefined : Math.max(0, Math.min(total, elapsedSec));
@@ -82,11 +92,11 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
               Glossy cap: a lighter top edge easing into full colour, held
               through the middle, then down to 25% black at 50% opacity.
             */}
-            <stop offset="0" stopColor={tint(ZONE_COLORS[z], 0.45)} />
-            <stop offset="0.07" stopColor={tint(ZONE_COLORS[z], 0.12)} />
-            <stop offset="0.22" stopColor={ZONE_COLORS[z]} />
-            <stop offset="0.55" stopColor={ZONE_COLORS[z]} />
-            <stop offset="1" stopColor={shade(ZONE_COLORS[z], 0.25)} stopOpacity={0.5} />
+            <stop offset="0" stopColor={tint(zoneColor(z, zoneSet), 0.45)} />
+            <stop offset="0.07" stopColor={tint(zoneColor(z, zoneSet), 0.12)} />
+            <stop offset="0.22" stopColor={zoneColor(z, zoneSet)} />
+            <stop offset="0.55" stopColor={zoneColor(z, zoneSet)} />
+            <stop offset="1" stopColor={shade(zoneColor(z, zoneSet), 0.25)} stopOpacity={0.5} />
           </linearGradient>
         ))}
         {/*
@@ -107,16 +117,14 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
       <g>{rects(ridden === undefined ? 0.85 : UNRIDDEN_OPACITY)}</g>
       {ridden !== undefined && <g clipPath={`url(#${clipId})`}>{rects(1)}</g>}
       {cur && (
+        // The block being ridden breathes gently instead of wearing an outline.
         <rect
+          className="profile__pulse"
           x={cur.x + gap / 2}
           y={base * (1 - cur.height)}
           width={Math.max(cur.width - gap, gap)}
-          height={base * cur.height}
-          fill="none"
-          stroke="#fff"
-          strokeOpacity={0.9}
-          strokeWidth={1.5}
-          vectorEffect="non-scaling-stroke"
+          height={(bleed ? 1 : base) - base * (1 - cur.height)}
+          fill={`url(#${gradId(cur.zone)})`}
         />
       )}
       <g transform={`scale(1 ${base})`}>
@@ -147,10 +155,9 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
       )}
       </g>
     </svg>
-    {ridden !== undefined && ridden > 0 && ridden < total && (
-      // Playhead as a positioned element: an SVG line with a non-scaling
-      // stroke on this stretched chart was drawn far above the chart in Chrome.
-      <div className="profile__playhead" style={{ left: `${(ridden / total) * 100}%`, height: `${base * 100}%` }} />
+    {ridden !== undefined && (
+      // The glowing "now" line with sparkles and vapour trailing off its left edge.
+      <PlayheadFx x={ridden / total} band={base} variant={style} color={cur ? cur.color : "#ffffff"} />
     )}
     </div>
   );
