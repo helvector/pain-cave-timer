@@ -110,11 +110,12 @@ wants it later; the UI does not colour the readout against it.
 The bottom of the ride screen, and the top of the confirmation screen, show
 the session's shape (`WorkoutProfile`, geometry in `src/lib/profile.ts`): one
 bar per block, width = duration, height = top of the watt target, colour =
-power zone: recovery green, endurance mid blue, tempo yellow, under
-threshold yellow-orange, threshold deep orange, reds above. Zone comes from
-the coach's label ("Tempo-Threshold" counts as under threshold;
-"Recovery-Endurance" counts as endurance; other spans take the lower zone), then
-%FTP, then watts against `FTP_WATTS`. The height axis starts at a baseline
+the rider's own power zone, set in `src/lib/power-zones.ts` (absolute watts
+from the coach): Recovery 0–145 light blue, Endurance 146–197 green, Tempo
+198–236 yellow, Threshold 237–275 yellow-orange, VO2 Max 276–314 orange,
+Anaerobic 315+ red. The middle of a block's watt target picks its zone;
+blocks without watts fall back to %FTP × `FTP_WATTS`, then the coach's zone
+label, then the block kind. Update that table when the zones change. The height axis starts at a baseline
 below the easiest block, as training apps do, so small target steps show.
 Ridden time is drawn at full strength with a playhead; the current block is
 outlined. With a heart-rate strap connected, a 2 px red line plots heart rate
