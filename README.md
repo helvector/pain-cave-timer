@@ -120,12 +120,16 @@ private Vercel Blob store as `settings.json`, defaults in `src/lib/settings.ts`;
 saving needs `APP_TOKEN`). "Calculate from FTP" fills zone tops at 55, 75, 90,
 105 and 120% of FTP, the TrainingPeaks formula the coach's table follows. The height axis starts at a baseline
 below the easiest block, as training apps do, so small target steps show.
-Ridden time is drawn at full strength; the current block pulses gently and a
-glowing "now" line sheds sparkles and vapour off its trailing edge
-(`PlayheadFx`, canvas; four styles in `src/lib/playhead-fx.ts`: Ember, Comet,
-Plasma, Stardust, chosen on /admin). Reduced motion gets a still line. With a heart-rate strap connected, a 2 px red line plots heart rate
-over the bars (one reading every 2 s, fixed 60–200 bpm scale with max HR at
-the top); it breaks on dropouts and across Skip/Back jumps, and pauses with
+Ridden time is drawn at full strength; the current block pulses and a black
+"now" line runs from the top of the current bar to the bottom of the screen,
+shedding sparkles and vapour off its trailing edge (`PlayheadFx`, canvas; four
+styles in `src/lib/playhead-fx.ts`: Ember, Comet, Plasma, Stardust, chosen on
+/admin). Pulse speed and strength, particle density, speed, size and glow all
+scale with heart rate from resting (80) to max (196), also set on /admin and
+used for the chart's heart-rate scale. Demo links can preview a style with
+`&fx=comet`. Reduced motion gets a still line. With a heart-rate strap connected, a 2 px red line plots heart rate
+over the bars (one reading every 2 s, on the resting-to-max scale from
+/admin, 80–196 bpm by default); it breaks on dropouts and across Skip/Back jumps, and pauses with
 the timer.
 
 ## Living background

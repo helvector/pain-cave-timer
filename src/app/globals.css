@@ -260,10 +260,11 @@ p { margin: 0; line-height: 1.4; }
 .profile__svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .profile__fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 /* Current block: a slow, gentle brightening in place of an outline. */
-.profile__pulse { animation: block-pulse 2.6s ease-in-out infinite; mix-blend-mode: screen; }
+/* Faster and stronger with heart rate: --pulse-dur / --pulse-peak are set per render. */
+.profile__pulse { animation: block-pulse var(--pulse-dur, 2.6s) ease-in-out infinite; mix-blend-mode: screen; }
 @keyframes block-pulse {
   0%, 100% { fill-opacity: 0.05; }
-  50% { fill-opacity: 0.55; }
+  50% { fill-opacity: var(--pulse-peak, 0.45); }
 }
 @media (prefers-reduced-motion: reduce) {
   .profile__pulse { animation: none; fill-opacity: 0.3; }
@@ -318,3 +319,8 @@ p { margin: 0; line-height: 1.4; }
 .fx-card--on { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
 .fx-card__name { font-weight: 600; }
 .admin__token { display: flex; flex-direction: column; gap: 6px; max-width: 360px; }
+.admin__hr label { display: flex; flex-direction: column; gap: 4px; }
+.admin__hr input { width: 6em; }
+.admin__slider { display: flex; flex-direction: column; gap: 8px; }
+.admin__slider input[type="range"] { width: 100%; accent-color: #ff2b2b; padding: 0; border: 0; background: none; }
+.admin__bpm { color: #ff2b2b; }

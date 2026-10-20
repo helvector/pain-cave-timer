@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, resolveZones, validateSettings, zoneTopsFromFtp } from "../src/lib/settings";
+import { DEFAULT_SETTINGS, hrIntensity, resolveZones, validateSettings, zoneTopsFromFtp } from "../src/lib/settings";
 import { zoneForWatts } from "../src/lib/power-zones";
 
 describe("settings", () => {
@@ -36,6 +36,21 @@ describe("settings", () => {
     const r = validateSettings(input);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(msg);
+  });
+
+  it("maps heart rate to 0..1 intensity between resting and max", () => {
+    expect(hrIntensity(80, 80, 196)).toBe(0);
+    expect(hrIntensity(138, 80, 196)).toBe(0.5);
+    expect(hrIntensity(196, 80, 196)).toBe(1);
+    expect(hrIntensity(60, 80, 196)).toBe(0);
+    expect(hrIntensity(205, 80, 196)).toBe(1);
+    expect(hrIntensity(undefined, 80, 196)).toBe(0);
+  });
+
+  it("defaults and validates resting / max heart rate", () => {
+    const r = validateSettings({ zones: DEFAULT_SETTINGS.zones });
+    expect(r.ok && [r.settings.hrRest, r.settings.hrMax]).toEqual([80, 196]);
+    expect(validateSettings({ ...DEFAULT_SETTINGS, hrMax: 90 }).ok).toBe(false);
   });
 
   it("falls back to the default style for an unknown playhead", () => {

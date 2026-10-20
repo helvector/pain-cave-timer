@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Workout } from "@/lib/workout/types";
 import {
-  DEFAULT_SETTINGS, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
+  DEFAULT_SETTINGS, hrIntensity, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
   type PlayheadStyle, type Settings,
 } from "@/lib/settings";
 import { useSettings } from "./SettingsProvider";
@@ -28,6 +28,7 @@ function Editor({ initial }: { initial: Settings }) {
   const [status, setStatus] = useState<{ kind: "ok" | "error" | "busy"; text: string }>();
   const [sample, setSample] = useState<Workout>();
   const [clock, setClock] = useState(0);
+  const [previewBpm, setPreviewBpm] = useState(150);
 
   // A real session to preview with: last week's over-unders (every zone up to threshold).
   useEffect(() => {
@@ -48,7 +49,9 @@ function Editor({ initial }: { initial: Settings }) {
   const check = useMemo(() => validateSettings({ ...draft, ftp: ftp || undefined }), [draft, ftp]);
   const elapsed = sample ? (clock * 60) % sample.totalSec : 0;
   const current = sample?.blocks.findIndex((b) => elapsed >= b.startSec && elapsed < b.startSec + b.durationSec) ?? -1;
-  const dirty = JSON.stringify({ z: draft.zones, p: draft.playhead }) !== JSON.stringify({ z: initial.zones, p: initial.playhead });
+  const intensity = hrIntensity(previewBpm, draft.hrRest, draft.hrMax);
+  const pick = (d: Settings) => ({ z: d.zones, p: d.playhead, r: d.hrRest, m: d.hrMax });
+  const dirty = JSON.stringify(pick(draft)) !== JSON.stringify(pick(initial));
 
   const setZone = (i: number, patch: Partial<Settings["zones"][number]>) =>
     setDraft((d) => ({ ...d, zones: d.zones.map((z, k) => (k === i ? { ...z, ...patch } : z)) }));
@@ -83,7 +86,7 @@ function Editor({ initial }: { initial: Settings }) {
 
   const preview = (style: PlayheadStyle, className: string) =>
     sample ? (
-      <WorkoutProfile workout={sample} elapsedSec={elapsed} currentIndex={current >= 0 ? current : undefined} zones={zones} playhead={style} className={className} />
+      <WorkoutProfile workout={sample} elapsedSec={elapsed} currentIndex={current >= 0 ? current : undefined} zones={zones} playhead={style} intensity={intensity} className={className} />
     ) : (
       <div className={`profile ${className} admin__loading`}>Loading sample…</div>
     );
@@ -138,6 +141,31 @@ function Editor({ initial }: { initial: Settings }) {
               zones your coach&apos;s table follows. His numbers match an FTP of about 262 W; adjust any number by hand after.
             </p>
           </div>
+        </section>
+
+        <section className="admin__section">
+          <h2>Heart rate</h2>
+          <p className="muted small">
+            Resting to max sets the heart-rate scale on the chart and how hard the current block pulses and the line sparks.
+          </p>
+          <div className="row admin__hr">
+            <label>
+              <span className="muted small">Resting</span>
+              <input type="number" inputMode="numeric" value={draft.hrRest} onChange={(e) => setDraft((d) => ({ ...d, hrRest: Number(e.target.value) }))} aria-label="Resting heart rate, bpm" />
+            </label>
+            <label>
+              <span className="muted small">Max</span>
+              <input type="number" inputMode="numeric" value={draft.hrMax} onChange={(e) => setDraft((d) => ({ ...d, hrMax: Number(e.target.value) }))} aria-label="Max heart rate, bpm" />
+            </label>
+            <span className="muted">bpm</span>
+          </div>
+          <label className="admin__slider">
+            <span className="small">
+              Preview heart rate <b className="admin__bpm">{previewBpm} bpm</b>
+              <span className="muted"> · intensity {Math.round(intensity * 100)}%</span>
+            </span>
+            <input type="range" min={Math.max(40, draft.hrRest - 10)} max={draft.hrMax + 5} value={previewBpm} onChange={(e) => setPreviewBpm(Number(e.target.value))} />
+          </label>
         </section>
 
         <section className="admin__section">

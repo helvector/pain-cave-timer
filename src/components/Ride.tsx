@@ -10,6 +10,8 @@ import { Blur } from "@/components/animate-ui/primitives/effects/blur";
 import { RideBackground } from "./RideBackground";
 import { WorkoutProfile } from "./WorkoutProfile";
 import { addHrSample, type HrSample } from "@/lib/profile";
+import { hrIntensity, type PlayheadStyle } from "@/lib/settings";
+import { useSettings } from "./SettingsProvider";
 
 /** Quick, non-bouncy spring for digits that change every second. */
 const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
@@ -22,6 +24,8 @@ interface Props {
   onExit: () => void;
   /** Live heart rate when a sensor is connected; shown, never steered by. */
   bpm?: number;
+  /** Override the saved "now" line style (demo links for picking a style). */
+  playhead?: PlayheadStyle;
 }
 
 /**
@@ -29,7 +33,10 @@ interface Props {
  * so a throttled tab or a slow tick never drifts the schedule. Cues fire when
  * the block index changes; 3-2-1 ticks lead into every transition.
  */
-export function Ride({ workout, onDone, onExit, bpm }: Props) {
+export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
+  const { settings } = useSettings();
+  // No strap: a calm quarter intensity. With one: resting → max heart rate maps to 0 → 1.
+  const intensity = bpm === undefined ? 0.25 : hrIntensity(bpm, settings.hrRest, settings.hrMax);
   const cues = useMemo(() => new Cues(), []);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [pausedAt, setPausedAt] = useState<number | null>(null);
@@ -182,6 +189,8 @@ export function Ride({ workout, onDone, onExit, bpm }: Props) {
           currentIndex={pos.index}
           hr={hrTrace}
           reservePx={reservePx}
+          intensity={intensity}
+          playhead={playhead}
           className="profile--ride"
         />
         <div className="controls" ref={controlsRef}>

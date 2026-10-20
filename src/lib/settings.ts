@@ -25,6 +25,9 @@ export interface ZoneSetting {
 export interface Settings {
   zones: ZoneSetting[];
   playhead: PlayheadStyle;
+  /** Resting and max heart rate: the chart's HR scale and the 0..1 intensity that drives the pulse and particles. */
+  hrRest: number;
+  hrMax: number;
   /** FTP last used with "Calculate from FTP", for reference. */
   ftp?: number;
   updatedAt?: string;
@@ -41,7 +44,15 @@ export const DEFAULT_SETTINGS: Settings = {
     { id: "anaerobic", name: "Anaerobic Capacity", hi: 2000, color: "#ff3b30" },
   ],
   playhead: "ember",
+  hrRest: 80,
+  hrMax: 196,
 };
+
+/** 0 at resting heart rate, 1 at max; clamped. */
+export function hrIntensity(bpm: number | undefined, rest: number, max: number): number {
+  if (bpm === undefined || !(max > rest)) return 0;
+  return Math.min(1, Math.max(0, (bpm - rest) / (max - rest)));
+}
 
 /**
  * The coach's table follows the standard TrainingPeaks power-zone formula:
@@ -91,5 +102,9 @@ export function validateSettings(input: unknown): { ok: true; settings: Settings
   const playhead = PLAYHEAD_STYLES.includes(raw.playhead as PlayheadStyle) ? (raw.playhead as PlayheadStyle) : DEFAULT_SETTINGS.playhead;
   const ftp = raw.ftp === undefined || raw.ftp === null || raw.ftp === "" ? undefined : Number(raw.ftp);
   if (ftp !== undefined && !(ftp > 50 && ftp < 1000)) return { ok: false, error: "FTP must be between 50 and 1000 W" };
-  return { ok: true, settings: { zones, playhead, ftp } };
+  const hrRest = raw.hrRest === undefined ? DEFAULT_SETTINGS.hrRest : Number(raw.hrRest);
+  const hrMax = raw.hrMax === undefined ? DEFAULT_SETTINGS.hrMax : Number(raw.hrMax);
+  if (!Number.isInteger(hrRest) || hrRest < 30 || hrRest > 130) return { ok: false, error: "Resting heart rate must be 30–130 bpm" };
+  if (!Number.isInteger(hrMax) || hrMax < 120 || hrMax > 230 || hrMax <= hrRest + 20) return { ok: false, error: "Max heart rate must be 120–230 bpm and well above resting" };
+  return { ok: true, settings: { zones, playhead, ftp, hrRest, hrMax } };
 }
