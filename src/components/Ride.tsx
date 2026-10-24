@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
 import { clock, positionAt, positionLabel, zoneLabel } from "@/lib/timer";
@@ -17,15 +18,24 @@ import { useSettings } from "./SettingsProvider";
 const DIGIT_SPRING = { stiffness: 320, damping: 32, mass: 0.5 };
 /** Watts settle in about half a second on a block change. */
 const WATTS_SPRING = { stiffness: 140, damping: 28 };
+/** Controls tuck away like the macOS dock: a quick spring with a touch of overshoot. */
+const DOCK_SPRING = { type: "spring", stiffness: 420, damping: 30, mass: 0.9 } as const;
+/** How long the controls stay up after the last tap. */
+const CONTROLS_MS = 3000;
 
 interface Props {
   workout: Workout;
-  onDone: (elapsedSec: number) => void;
+  /** Called once when the last block ends, with the heart-rate trace for the summary. */
+  onDone: (elapsedSec: number, hr: HrSample[]) => void;
   onExit: () => void;
   /** Live heart rate when a sensor is connected; shown, never steered by. */
   bpm?: number;
   /** Override the saved "now" line style (demo links for picking a style). */
   playhead?: PlayheadStyle;
+  /** Demo only: start this many seconds into the workout. */
+  startAtSec?: number;
+  /** Demo only: heart-rate trace to start from. */
+  seedHr?: HrSample[];
 }
 
 /**
@@ -33,12 +43,12 @@ interface Props {
  * so a throttled tab or a slow tick never drifts the schedule. Cues fire when
  * the block index changes; 3-2-1 ticks lead into every transition.
  */
-export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
+export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, seedHr }: Props) {
   const { settings } = useSettings();
   // No strap: a calm quarter intensity. With one: resting → max heart rate maps to 0 → 1.
   const intensity = bpm === undefined ? 0.25 : hrIntensity(bpm, settings.hrRest, settings.hrMax);
   const cues = useMemo(() => new Cues(), []);
-  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [startedAt, setStartedAt] = useState(() => Date.now() - startAtSec * 1000);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const lastIndex = useRef(0);
@@ -51,10 +61,10 @@ export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
 
   // Heart-rate trace for the profile: one reading every 2 s while riding,
   // a null when the strap has no reading so the line breaks there.
-  const [hrTrace, setHrTrace] = useState<HrSample[]>([]);
-  const latest = useRef({ bpm, elapsedSec });
+  const [hrTrace, setHrTrace] = useState<HrSample[]>(() => seedHr ?? []);
+  const latest = useRef({ bpm, elapsedSec, hrTrace });
   useEffect(() => {
-    latest.current = { bpm, elapsedSec };
+    latest.current = { bpm, elapsedSec, hrTrace };
   });
   useEffect(() => {
     if (pausedAt !== null) return;
@@ -97,7 +107,7 @@ export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
       if (!doneRef.current) {
         doneRef.current = true;
         cues.play("finish");
-        onDone(workout.totalSec);
+        onDone(workout.totalSec, latest.current.hrTrace);
       }
       return;
     }
@@ -145,18 +155,31 @@ export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
     return () => ro.disconnect();
   }, []);
 
+  // Controls are hidden while riding so a knee or sweaty hand can't pause or
+  // exit by accident. Any tap brings them up; they tuck away 3 s after the
+  // last tap. While paused they stay up (Resume has to be reachable).
+  const [controlsUp, setControlsUp] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reveal = useCallback(() => {
+    setControlsUp(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setControlsUp(false), CONTROLS_MS);
+  }, []);
+  useEffect(() => () => { if (hideTimer.current) clearTimeout(hideTimer.current); }, []);
+  const shown = controlsUp || pausedAt !== null;
+
   const b = pos.block;
   const next = pos.next;
 
   return (
-    <main className={`ride ${b.kind}${pausedAt !== null ? " paused" : ""}`}>
+    <main className={`ride ${b.kind}${pausedAt !== null ? " paused" : ""}`} onPointerDown={reveal}>
       <RideBackground kind={b.kind} bpm={bpm} />
       <Blur key={`top-${pos.index}`} className="top" initialBlur={8} transition={{ duration: 0.35 }}>
         <span className="label">{zoneLabel(b)}</span>
         <span>{positionLabel(b, workout.blocks.length)}</span>
       </Blur>
 
-      <div className="main" onClick={togglePause} role="button" aria-label={pausedAt !== null ? "Resume" : "Pause"}>
+      <div className="main">
         <div className={`time${pos.remainingSec >= 3600 ? " long" : ""}`} aria-label={clock(pos.remainingSec)}>
           <RollingClock sec={pos.remainingSec} />
         </div>
@@ -179,7 +202,7 @@ export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
             <span aria-hidden>♥</span>{bpm}
           </div>
         )}
-        {pausedAt !== null && <p className="muted paused-note">Paused · tap to resume</p>}
+        {pausedAt !== null && <p className="muted paused-note">Paused</p>}
       </div>
 
       <div className="ride-bottom" style={{ "--reserve": `${reservePx}px` } as React.CSSProperties}>
@@ -193,12 +216,22 @@ export function Ride({ workout, onDone, onExit, bpm, playhead }: Props) {
           playhead={playhead}
           className="profile--ride"
         />
-        <div className="controls" ref={controlsRef}>
+        <motion.div
+          className="controls"
+          ref={controlsRef}
+          initial={false}
+          animate={shown ? { y: 0, opacity: 1, scale: 1 } : { y: 120, opacity: 0, scale: 0.92 }}
+          transition={DOCK_SPRING}
+          // Off-screen controls must not catch a stray tap.
+          inert={!shown}
+          aria-hidden={!shown}
+        >
           <button onClick={onExit}>Exit</button>
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>
           <button onClick={togglePause}>{pausedAt !== null ? "Resume" : "Pause"}</button>
           <button onClick={() => jumpTo(pos.index + 1)} disabled={!next}>Skip</button>
-        </div>
+        </motion.div>
+        {!shown && <p className="controls-hint" aria-hidden>Tap for controls</p>}
       </div>
     </main>
   );

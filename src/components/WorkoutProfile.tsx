@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
 import { hrPath, profileBars, shade, tint, UNRIDDEN_OPACITY, zoneColor, type HrSample, type PowerZone } from "@/lib/profile";
 import type { PlayheadStyle } from "@/lib/settings";
+import { clock, wattsLabel } from "@/lib/timer";
 import { useSettings } from "./SettingsProvider";
 import { PlayheadFx } from "./PlayheadFx";
 
@@ -28,6 +29,8 @@ interface Props {
   playhead?: PlayheadStyle;
   /** 0..1 from heart rate (resting → max): how hard the current block pulses and the line sparks. */
   intensity?: number;
+  /** Write each block's duration (headline face, black, 80% of the bar's width) and wattage on its bar. */
+  blockLabels?: boolean;
   className?: string;
 }
 
@@ -37,19 +40,20 @@ interface Props {
  * dimmed; the current block pulses and a glowing line marks "now". SVG scaled with preserveAspectRatio="none"
  * so it fills any width; strokes keep their pixel width.
  */
-export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, zones: zonesProp, playhead, intensity = 0.25, className }: Props) {
+export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, reservePx, zones: zonesProp, playhead, intensity = 0.25, blockLabels, className }: Props) {
   const saved = useSettings();
   const zoneSet = zonesProp ?? saved.zones;
   const style = playhead ?? saved.settings.playhead;
   const svgRef = useRef<HTMLDivElement>(null);
   const [heightPx, setHeightPx] = useState(0);
+  const [widthPx, setWidthPx] = useState(0);
   useEffect(() => {
     const el = svgRef.current;
-    if (!el || !reservePx) return;
-    const ro = new ResizeObserver(([e]) => setHeightPx(e.contentRect.height));
+    if (!el || !(reservePx || blockLabels)) return;
+    const ro = new ResizeObserver(([e]) => { setHeightPx(e.contentRect.height); setWidthPx(e.contentRect.width); });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [reservePx]);
+  }, [reservePx, blockLabels]);
   // Fraction of the height where the chart's baseline sits (1 = bottom edge).
   const bleed = Boolean(reservePx && heightPx);
   const base = bleed ? Math.max(0.3, 1 - reservePx! / heightPx) : 1;
@@ -162,6 +166,31 @@ export function WorkoutProfile({ workout, elapsedSec, currentIndex, ftp, hr, res
       )}
       </g>
     </svg>
+    {blockLabels && widthPx > 0 && (
+      <div className="profile__labels" aria-hidden>
+        {bars.map((b) => {
+          const block = workout.blocks[b.index];
+          const t = clock(block.durationSec);
+          // Balfron figures ≈ 0.27em wide, colon ≈ 0.13em: size the time to 80% of the bar's width.
+          const em = t.replace(/[^0-9]/g, "").length * 0.27 + (t.match(/:/g)?.length ?? 0) * 0.13;
+          const barW = ((b.width - gap) / total) * widthPx;
+          const barH = (bleed ? base : 1) * b.height * heightPx;
+          const size = Math.min((0.8 * barW) / em, barH * 0.55);
+          if (size < 11) return null;
+          const watts = wattsLabel(block);
+          return (
+            <div
+              key={b.index}
+              className="profile__label"
+              style={{ left: `${((b.x + gap / 2) / total) * 100}%`, width: `${((b.width - gap) / total) * 100}%`, top: `${base * (1 - b.height) * 100}%` }}
+            >
+              <span className="profile__label-time" style={{ fontSize: `${size}px` }}>{t}</span>
+              {watts && size * 0.36 >= 9 && <span className="profile__label-w" style={{ fontSize: `${size * 0.36}px` }}>{watts}</span>}
+            </div>
+          );
+        })}
+      </div>
+    )}
     {ridden !== undefined && (
       // The glowing "now" line with sparkles and vapour trailing off its left edge.
       <PlayheadFx
