@@ -25,7 +25,7 @@ src/lib/workout/
 src/lib/workout/fetch-today.ts  newest emails → workout for a date
 src/lib/mail/           MailSource interface, env config, IMAP source (imapflow + mailparser)
 src/app/api/workout/    GET /api/workout?date=… behind a bearer token (?demo=1 serves the fixture)
-src/components/         App (token, load, phases) · Confirm (block list + warnings) · Ride (timer)
+src/components/         App (token, load, phases) · Confirm (block list + warnings) · Ride (timer) · Summary (end-of-ride image)
 src/lib/timer.ts        pure position/format helpers used by the ride screen
 src/lib/audio.ts        Web Audio cues: start, work, recovery, finish, 3-2-1 ticks
 scripts/parse.ts        CLI: print the block list for a saved email or text file
@@ -131,6 +131,28 @@ used for the chart's heart-rate scale. Demo links can preview a style with
 over the bars (one reading every 2 s, on the resting-to-max scale from
 /admin, 80–196 bpm by default); it breaks on dropouts and across Skip/Back jumps, and pauses with
 the timer.
+
+## Confirmation, controls and ride summary
+
+The confirmation screen (`ConfirmHero` in `src/components/ConfirmVariants.tsx`)
+leads with a tall profile where each bar carries its duration in the display
+face, sized to 80% of the bar's width, with the watt target beneath when it
+fits. Below it: time in each zone, then one row per block (number, time,
+watts, zone and set), with Reload and Start pinned for the thumb.
+
+During the ride the Exit, Back, Pause and Skip buttons stay hidden so a
+stray tap can't pause or quit. The first tap anywhere springs them up like the
+macOS dock; they sink away after 3 s without another tap, and stay up while
+paused.
+
+When the ride ends a share image is drawn on a canvas (`src/lib/summary-card.ts`)
+in two layouts: a 1080×1350 Data card and a 1080×1920 Story. Both show the
+profile with each block's planned peak watts on its bar, the heart-rate line,
+and min and max heart rate in red. **Save to Photos** opens the share sheet
+(Web Share with files); where that isn't available a full-screen image with
+press-and-hold instructions and a download link appears instead. Preview with
+`/?demo=1&fixture=overunder&bpm=150&at=end`, which starts 8 s before the finish
+with a simulated heart-rate trace.
 
 ## Living background
 

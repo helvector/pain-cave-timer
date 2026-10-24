@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Workout } from "@/lib/workout/types";
 import { Confirm } from "./Confirm";
 import { Ride } from "./Ride";
-import { clock } from "@/lib/timer";
-import { Fade } from "@/components/animate-ui/primitives/effects/fade";
 import { useHeartRate } from "@/hooks/use-heart-rate";
 import { PLAYHEAD_STYLES, type PlayheadStyle } from "@/lib/settings";
+import { Summary } from "./Summary";
+import { syntheticHr } from "@/lib/demo-hr";
+import type { HrSample } from "@/lib/profile";
 
 const TOKEN_KEY = "pct.token";
 
@@ -27,7 +28,7 @@ type Phase =
   | { name: "error"; message: string }
   | { name: "confirm"; result: ApiResult; selected: Workout }
   | { name: "ride"; workout: Workout }
-  | { name: "done"; workout: Workout; elapsedSec: number };
+  | { name: "done"; workout: Workout; elapsedSec: number; hr: HrSample[] };
 
 function readToken(): string {
   try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
@@ -44,6 +45,8 @@ export function App() {
   // Demo only: ?fx=comet previews a "now" line style without saving it.
   const fxParam = params.get("fx");
   const fx = demo && PLAYHEAD_STYLES.includes(fxParam as PlayheadStyle) ? (fxParam as PlayheadStyle) : undefined;
+  // Demo only: ?at=end starts 8 s before the finish with a realistic heart-rate trace.
+  const atEnd = demo && params.get("at") === "end";
   // Demo only: ?bpm=142 simulates a connected strap so the pulse can be previewed.
   const demoBpm = demo && params.get("bpm") ? Number(params.get("bpm")) : undefined;
   const [simBpm, setSimBpm] = useState<number>();
@@ -155,20 +158,13 @@ export function App() {
         workout={phase.workout}
         bpm={liveBpm}
         playhead={fx}
-        onDone={(elapsedSec) => setPhase({ name: "done", workout: phase.workout, elapsedSec })}
+        startAtSec={atEnd ? Math.max(0, phase.workout.totalSec - 8) : 0}
+        seedHr={atEnd ? syntheticHr(phase.workout, phase.workout.totalSec - 8) : undefined}
+        onDone={(elapsedSec, hr) => setPhase({ name: "done", workout: phase.workout, elapsedSec, hr })}
         onExit={reload}
       />
     );
   }
 
-  return (
-    <main className="screen center done">
-      <Fade className="stack" style={{ alignItems: "center" }} initialOpacity={0} transition={{ duration: 0.4 }}>
-        <p className="muted">Done</p>
-        <div className="time">{clock(phase.elapsedSec)}</div>
-        <h1>{phase.workout.title}</h1>
-        <button className="primary" onClick={reload}>Back to today</button>
-      </Fade>
-    </main>
-  );
+  return <Summary workout={phase.workout} hr={phase.hr} onDone={reload} />;
 }

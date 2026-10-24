@@ -324,3 +324,80 @@ p { margin: 0; line-height: 1.4; }
 .admin__slider { display: flex; flex-direction: column; gap: 8px; }
 .admin__slider input[type="range"] { width: 100%; accent-color: #ff2b2b; padding: 0; border: 0; background: none; }
 .admin__bpm { color: #ff2b2b; }
+
+/* Hidden-controls hint: a faint line where the dock sits, fading out after the first tap. */
+.controls-hint {
+  position: absolute; left: 0; right: 0; bottom: max(22px, env(safe-area-inset-bottom));
+  margin: 0; text-align: center; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35); pointer-events: none;
+}
+
+/* ---- end-of-ride summary ------------------------------------------------ */
+.summary { align-items: center; }
+.summary__wrap { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; }
+.summary h1 { font-size: 2.4rem; }
+.summary__pick { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #0f0f12; align-self: flex-start; }
+.summary__pick button { padding: 8px 16px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font-size: 0.9rem; }
+.summary__pick button.on { background: #fff; color: #000; font-weight: 600; }
+.summary__card { border-radius: 18px; overflow: hidden; background: #08080a; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+.summary__card img { display: block; width: 100%; height: auto; }
+.summary__card--story { max-width: 330px; align-self: center; }
+.summary__loading { aspect-ratio: 4 / 5; display: grid; place-items: center; color: var(--muted); }
+.summary__fallback {
+  position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,0.92);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+}
+.summary__fallback img { max-width: 100%; max-height: 72vh; border-radius: 12px; -webkit-touch-callout: default; }
+a.button { display: inline-block; border: 1px solid var(--line); border-radius: 12px; padding: 14px 22px; color: inherit; text-decoration: none; }
+
+/* ---- confirmation screen (Hero) -------------------------------------------- */
+.cv { align-items: center; }
+.cv__wrap { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 16px; }
+.cv__head { display: flex; flex-direction: column; gap: 6px; }
+.cv__title { font-family: var(--font-display), var(--font-ui), sans-serif; font-weight: 400; text-transform: uppercase; font-size: 1.9rem; line-height: 1.02; }
+.cv--c .cv__title { font-size: 2.85rem; line-height: 0.95; }
+.cv__rest { font-size: 1.2rem; margin: 24px 0; }
+.cv__title--sm { font-size: 1.5rem; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: 0.85rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+.chip b { color: var(--fg); font-weight: 600; margin-right: 3px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.cv__actions .primary { flex: 1; }
+
+/* C: hero chart, time in zone, cards, pinned start */
+.cv__wrap--dock { padding-bottom: 150px; }
+.profile--hero { height: clamp(150px, 30vh, 280px); }
+.tiz { display: flex; flex-direction: column; gap: 10px; }
+.tiz__bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.tiz__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; font-size: 0.95rem; }
+.tiz__list li { display: flex; align-items: center; gap: 8px; }
+.tiz__list b { margin-left: auto; font-weight: 600; }
+/* Block list: stacked vertically (portrait), one full-width row per block, zone stripe on the left. */
+.cards { display: flex; flex-direction: column; gap: 6px; }
+.cards__card {
+  display: grid; grid-template-columns: 1.6em auto 1fr; column-gap: 12px; align-items: center;
+  padding: 10px 14px 10px 12px; border-radius: 12px; background: #0f0f12; border-left: 5px solid var(--z);
+}
+.cards__n { color: var(--muted); font-size: 0.85rem; text-align: right; }
+/* Wide enough for "15:00" so the watts line up down the list. */
+.cards__dur { font-family: var(--font-display), var(--font-ui), sans-serif; font-size: 2.3rem; line-height: 0.9; min-width: 1.3em; }
+.cards__info { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.cards__w { color: #fff; font-weight: 600; white-space: nowrap; }
+.cards__w small { color: #fff; font-size: 0.62em; font-weight: 600; margin-left: 2px; }
+.cards__name { color: var(--muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.85) 30%, #000);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.dock__hr .hr-row { font-size: 0.95rem; }
+.dock__actions { display: flex; gap: 10px; }
+.dock__actions .primary { flex: 1; font-size: 1.35rem; padding: 18px; }
+
+/* Duration + wattage written on each bar (confirmation hero chart). */
+.profile__labels { position: absolute; inset: 0; pointer-events: none; }
+.profile__label { position: absolute; display: flex; flex-direction: column; align-items: center; padding-top: 0.35em; }
+.profile__label-time { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 0.82; color: #000; white-space: nowrap; }
+.profile__label-w { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 1; color: #000; opacity: 0.8; white-space: nowrap; margin-top: 0.15em; }
