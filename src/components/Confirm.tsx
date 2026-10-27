@@ -5,6 +5,7 @@ import { RippleButton, RippleButtonRipples } from "@/components/animate-ui/primi
 import type { HeartRateState } from "@/hooks/use-heart-rate";
 import { useSettings } from "./SettingsProvider";
 import { ConfirmHero } from "./ConfirmVariants";
+import { MetricIcon } from "./MetricIcon";
 
 interface Props {
   result: { date: string; days: Workout[]; warnings: string[]; demo?: boolean; email?: { subject: string } };
@@ -65,7 +66,7 @@ function HeartRateRow({ hr }: { hr: HeartRateState }) {
   return (
     <div className="row hr-row">
       <span className={live ? "" : "muted"}>
-        <span aria-hidden>♥</span> {live ? (hr.bpm ?? "—") : hr.status === "reconnecting" ? "reconnecting…" : hr.status === "connecting" ? "connecting…" : "not connected"}
+        <MetricIcon metric="heart" className="hr-row__icon" /> {live ? (hr.bpm ?? "—") : hr.status === "reconnecting" ? "reconnecting…" : hr.status === "connecting" ? "connecting…" : "not connected"}
         {live && hr.name ? <span className="muted"> · {hr.name}</span> : null}
       </span>
       {hr.status === "idle" ? (

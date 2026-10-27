@@ -71,6 +71,8 @@ export interface Workout {
   tss?: number;
   description?: string;
   blocks: Block[];
+  /** Session-wide cadence from the description's "Intensity Ranges" ("Cadence: 80-100 RPM"). */
+  cadenceRpm?: Range;
   /** Sum of block durations. */
   totalSec: number;
   /** Things the parser noticed that a human should glance at before riding. */

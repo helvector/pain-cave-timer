@@ -1,194 +1,219 @@
 # Pain Cave Timer
 
-A glanceable interval timer for coached indoor cycling workouts. The coach
-schedules the session in TrainingPeaks; the nightly "Schedule for …" email
-is parsed into a flat list of blocks; the screen shows one thing at a time:
-zone, target watts, seconds remaining. Blocks auto-advance with an audio cue.
+A glanceable interval timer for coached indoor cycling.
 
-Status: **working end to end.** Parser, mail fetch, confirmation screen and
-full-screen timer. Open `/?demo=1` to try the UI with the redacted fixture and
-no mailbox.
+If your coach plans your sessions in [TrainingPeaks](https://www.trainingpeaks.com),
+you already get a "Schedule for …" email every evening with tomorrow's
+workout. Pain Cave Timer reads that email, turns it into a list of blocks
+(duration, target watts, zone, cadence), shows you the session to check, then
+runs it full screen on your phone or a TV: one block at a time, big numbers,
+an audio cue on every change, and live heart rate if you have a strap.
 
-## Layout
+Built for a phone propped on the handlebars in portrait, read mid-effort.
 
-```
-src/lib/workout/
-  types.ts        Block / Workout / ParsedEmail and the pre-expansion tree
-  zones.ts        Zone table (Z1–Z7 + sweet spot) and label aliases — config, not regex
-  duration.ts     "20 min", "1 hr 30 min", "90s", "1:30" → seconds
-  target.ts       "138-188 W", "76-85% FTP", "Z4", "sweet spot" → Target
-  step.ts         one step line → StepNode; title/target → block kind
-  text.ts         typed/pasted workouts, incl. "3x" repeat groups → tree
-  email-html.ts   TrainingPeaks email HTML → per-day tree (+ Time, TSS, description)
-  expand.ts       tree → flat blocks; set positions; cues; start offsets
-  index.ts        parseTrainingPeaksEmail / parseWorkoutFromText / pickWorkout
-src/lib/workout/fetch-today.ts  newest emails → workout for a date
-src/lib/mail/           MailSource interface, env config, IMAP source (imapflow + mailparser)
-src/app/api/workout/    GET /api/workout?date=… behind a bearer token (?demo=1 serves the fixture)
-src/components/         App (token, load, phases) · Confirm (block list + warnings) · Ride (timer) · Summary (end-of-ride image)
-src/lib/timer.ts        pure position/format helpers used by the ride screen
-src/lib/audio.ts        Web Audio cues: start, work, recovery, finish, 3-2-1 ticks
-scripts/parse.ts        CLI: print the block list for a saved email or text file
-scripts/fetch.ts        CLI: fetch today's workout from the mailbox using .env.local
-fixtures/               redacted samples used by tests; fixtures/raw/ is gitignored
-```
+## Features
 
-## Pipeline
+- **No copying workouts by hand.** Fetches the coach's email over IMAP and
+  parses TrainingPeaks' markup: warm-ups, repeats, ramps, over-unders,
+  "Repeat N times" sets, cadence, heart-rate notes.
+- **Check before you ride.** A confirmation screen with the session's shape
+  (each bar labelled with its time and watts), time in each power zone, and one
+  row per block. Anything the parser wasn't sure of is listed, never dropped.
+- **Ride screen.** Countdown, target watts, zone, set position ("2 of 3"), the
+  coach's cadence / RPE / heart-rate cues, and a profile chart with a "now"
+  line. Blocks auto-advance with distinct start, work, recovery and 3-2-1 cues.
+- **Only the numbers until you tap.** Time, watts, heart rate and cadence stay
+  on screen; the first tap brings up the controls, the zone and set position,
+  and what's next, and they all sink away after 3 s. No accidental pauses.
+- **Heart rate over Bluetooth** (tested with a Whoop broadcasting heart rate):
+  live BPM, a heart-rate line over the chart, and an animated background that
+  pulses with your heart.
+- **End-of-ride image.** A 4:5 data card or 9:16 story with the session
+  profile, planned peak watts per block and min/max heart rate, saved to Photos
+  through the share sheet.
+- **Your zones, your colours.** Edit power zones, colours, resting/max heart
+  rate and the "now" line style at `/admin`.
 
-1. **Extract** — `email-html.ts` anchors on the markup TrainingPeaks uses
-   (`h1.formattedDate` per day, `h2` title, `Time`/`TSS` headers, an `<ol>` of
-   steps with `.structureTitle` and target spans). One email covers two days.
-2. **Parse steps** — `step.ts` reads `20 min @ 138-188 W - Recovery-Endurance - 80-95 rpm`
-   into duration, target, zone codes, cadence, notes.
-3. **Expand** — repeat groups are unrolled at parse time. TrainingPeaks already
-   flattens repeats before emailing, so `annotateSets` also recovers "2 of 3"
-   from runs of identical work blocks separated by recovery.
-4. **Build** — each block gets `kind` (warmup / work / recovery / cooldown),
-   `startSec`, and `cue` (`start` | `work` | `recovery`). The runtime never
-   sees repeats, zones, or percentages.
-
-5. **Nested step lists** — TrainingPeaks puts several steps in one list item
-   via a nested `<ul>`. A "Repeat 4 times" item rides its steps 4 times over,
-   using each step's own label ("Steady State", "Recovery") and numbering them
-   "1 of 4" … "4 of 4". Any other title (e.g. "Ramp up in 4 steps"
-   over-unders) is one interval ridden once, one block per step, tagged `part` ("step 2/4"). Two alternating targets are
-   labelled Under / Over, a step down plays the recovery cue, and repeated
-   identical intervals get set numbers ("2 of 3") carried onto their recovery.
-
-Nothing is dropped silently. Every `Workout` carries `warnings` (planned time
-mismatch, missing watt targets, guessed intensities) and `unparsed` lines for
-the confirmation screen.
-
-## Try it
+## Try it without a mailbox
 
 ```bash
 npm install
-npm test
-npm run parse -- fixtures/trainingpeaks-sweet-spot-3x15.html
-npm run parse -- fixtures/coach-text-repeats.txt --ftp 250
+npm run dev
 ```
 
-To check a real email: save it as `.eml` or its HTML body as `.html` under
-`fixtures/raw/` (gitignored) and run `npm run parse -- fixtures/raw/<file> --date 2026-09-10`.
-Before committing any sample, strip every URL: TrainingPeaks links carry
-account and unsubscribe tokens.
+Open <http://localhost:3000/?demo=1&fixture=review>. Demo mode uses the
+redacted sample emails in `fixtures/` and needs no configuration.
 
-## Mail fetch
+| Parameter | What it does |
+|---|---|
+| `demo=1` | Use sample workouts instead of the mailbox; no token needed |
+| `fixture=review` | Ten real sessions as ten day tabs: steady state, sweet spot, 3.5 h endurance, recovery, power ladders, step ramps, two over-under shapes |
+| `fixture=sweetspot` · `overunder` · `steadystate` | A single sample email (two days) |
+| `bpm=150` | Simulate a heart-rate strap |
+| `at=end` | Start 8 s before the finish with a simulated heart-rate trace, to see the end screen |
+| `fx=ember` · `comet` · `plasma` · `stardust` | Preview a "now" line style |
 
-`GET /api/workout` (header `Authorization: Bearer $APP_TOKEN`, optional
-`?date=yyyy-mm-dd`) opens a short-lived IMAP connection, takes the newest
-messages from `MAIL_FROM`, parses each until one contains the requested date,
-and returns `{ date, workout, email, days, warnings }`. "Today" is computed in
-`APP_TIMEZONE` because Vercel runs in UTC. There is no nearest-day fallback:
-if the date is not in the last few emails you get a 404 with the days that
-were seen.
+## Run your own
 
-Locally, copy `.env.example` to `.env.local` (Gmail needs an App Password)
-and run:
+You need a TrainingPeaks account whose coach-scheduled workouts are emailed to
+an inbox you can reach over IMAP, and somewhere to host a Next.js app. It's
+built for [Vercel](https://vercel.com).
+
+1. **Fork and deploy** the repo to Vercel.
+2. **Mailbox access.** For Gmail, turn on 2-step verification and create an
+   [App Password](https://support.google.com/accounts/answer/185833).
+3. **Environment variables** (Vercel → Project → Settings → Environment
+   Variables; for local runs, copy `.env.example` to `.env.local`):
+
+   | Name | Purpose |
+   |---|---|
+   | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD` | IMAP login (`imap.gmail.com`, `993`, your address, the App Password) |
+   | `MAIL_FROM` | Sender to trust: `messages-no-reply@trainingpeaks.com` |
+   | `APP_TIMEZONE` | Your IANA time zone, so "today" is right (Vercel runs in UTC) |
+   | `APP_TOKEN` | A long random string; the app asks for it once and stores it on the device |
+   | `BLOB_READ_WRITE_TOKEN` | A private [Vercel Blob](https://vercel.com/docs/vercel-blob) store for `/admin` settings (added for you when you connect a store) |
+   | `FTP_WATTS` | Optional. Only needed if your coach writes targets as % of FTP |
+   | `THR_BPM` | Optional. Turns "84-92% of THR" notes into a BPM range |
+
+4. **Open it on your phone**, enter the token, and add it to the home screen.
+   For heart rate on iPhone use the Bluefy
+   browser (Safari has no Web Bluetooth); Chrome and Edge work on Android,
+   macOS and Windows.
+5. **Set your zones** at `/admin` (the token is needed to save). "Calculate
+   from FTP" fills zone tops at 55, 75, 90, 105 and 120% of FTP, the
+   TrainingPeaks formula.
+
+Check locally that the mailbox works:
 
 ```bash
 npm run fetch
-npm run fetch -- --date 2026-09-10 --json
+npm run fetch -- --date 2026-10-24 --json
 ```
 
-## Heart rate
+## How it works
 
-Optional readout, not a target. Turn on **Broadcast Heart Rate** in the Whoop
-app, tap **Connect Whoop** on the confirmation screen, pick the strap in the
-browser's device picker, and the ride screen shows live BPM under the watts.
-Uses Web Bluetooth (`src/lib/heart-rate.ts`, `src/hooks/use-heart-rate.ts`),
-so it works in Chrome/Edge on macOS, Windows and Android, and in the Bluefy
-browser on iPhone; Safari has no Web Bluetooth. Readings go stale after 8 s
-without a notification and the client retries a dropped link five times.
+```
+TrainingPeaks email ─IMAP─▶ /api/workout ─▶ parser ─▶ Workout { blocks[] } ─▶ Confirm ─▶ Ride ─▶ Summary
+```
 
-If `THR_BPM` is set, the coach's "Heart Rate: 84-92% of THR" notes are
-resolved to a BPM range on each block (`target.hrBpm`) for anything that
-wants it later; the UI does not colour the readout against it.
+1. **Fetch.** `GET /api/workout?date=yyyy-mm-dd` (bearer `APP_TOKEN`) opens a
+   short-lived IMAP connection, reads the newest messages from `MAIL_FROM`, and
+   parses each until one contains the date. Each email covers two days. There
+   is no nearest-day fallback: a missing date is a 404 listing the days seen.
+2. **Extract.** `email-html.ts` anchors on TrainingPeaks' markup: one
+   `h1.formattedDate` per day, the title, Time and TSS, the description, and
+   an `<ol>` of steps.
+3. **Parse steps.** `step.ts` reads
+   `20 min @ 138-188 W - Recovery-Endurance - 80-95 rpm` into duration, watt
+   range, zone and cadence; `target.ts` also handles % of FTP, zone-only
+   targets and heart-rate notes.
+4. **Nested lists.** A step can hold a nested list. Titled "Repeat 4 times",
+   its steps are ridden four times over ("1 of 4" … "4 of 4"). Any other title
+   ("Ramp up in 4 steps") is one interval ridden once, one block per step;
+   two alternating targets are labelled Under and Over.
+5. **Expand and build.** `expand.ts` unrolls everything into flat blocks with
+   a kind (warm-up, work, recovery, cool-down), start time, audio cue and set
+   position. TrainingPeaks often sends repeats already flattened, so set
+   numbers are also recovered from runs of identical work blocks.
+6. **Cadence.** A step's own rpm wins. Work intervals without one take the
+   session-wide "Cadence: 80-100 RPM" from the description. Everything else
+   shows **Open**.
 
-## Workout profile
+Nothing is dropped silently: every workout carries `warnings` (planned time
+mismatch, missing watt targets) and `unparsed` lines, shown on the
+confirmation screen. Typed or pasted workouts (a `3x` line followed by indented
+steps, see `fixtures/coach-text-repeats.txt`) go through `text.ts`.
 
-The bottom of the ride screen, and the top of the confirmation screen, show
-the session's shape (`WorkoutProfile`, geometry in `src/lib/profile.ts`): one
-bar per block, width = duration, height = top of the watt target, colour =
-the rider's own power zone, set in `src/lib/power-zones.ts` (absolute watts
-from the coach): Recovery 0–145 light blue, Endurance 146–197 green, Tempo
-198–236 yellow, Threshold 237–275 yellow-orange, VO2 Max 276–314 orange,
-Anaerobic 315+ red. The middle of a block's watt target picks its zone;
-blocks without watts fall back to %FTP × `FTP_WATTS`, then the coach's zone
-label, then the block kind. Edit zones and colours at **/admin** (saved in a
-private Vercel Blob store as `settings.json`, defaults in `src/lib/settings.ts`;
-saving needs `APP_TOKEN`). "Calculate from FTP" fills zone tops at 55, 75, 90,
-105 and 120% of FTP, the TrainingPeaks formula the coach's table follows. The height axis starts at a baseline
-below the easiest block, as training apps do, so small target steps show.
-Ridden time is drawn at full strength; the current block pulses and a black
-"now" line runs from the top of the current bar to the bottom of the screen,
-shedding sparkles and vapour off its trailing edge (`PlayheadFx`, canvas; four
-styles in `src/lib/playhead-fx.ts`: Ember, Comet, Plasma, Stardust, chosen on
-/admin). Pulse speed and strength, particle density, speed, size and glow all
-scale with heart rate from resting (80) to max (196), also set on /admin and
-used for the chart's heart-rate scale. Demo links can preview a style with
-`&fx=comet`. Reduced motion gets a still line. With a heart-rate strap connected, a 2 px red line plots heart rate
-over the bars (one reading every 2 s, on the resting-to-max scale from
-/admin, 80–196 bpm by default); it breaks on dropouts and across Skip/Back jumps, and pauses with
-the timer.
+## Development
 
-## Confirmation, controls and ride summary
+```bash
+npm test             # vitest: parser, fixtures, timer, settings, summary
+npm run lint         # ESLint with the React Compiler rules
+npm run typecheck
+npm run parse -- fixtures/trainingpeaks-overunder-3x16.html
+npm run parse -- fixtures/coach-text-repeats.txt --ftp 250
+```
 
-The confirmation screen (`ConfirmHero` in `src/components/ConfirmVariants.tsx`)
-leads with a tall profile where each bar carries its duration in the display
-face, sized to 80% of the bar's width, with the watt target beneath when it
-fits. Below it: time in each zone, then one row per block (number, time,
-watts, zone and set), with Reload and Start pinned for the thumb.
+**Adding a sample email.** Save the raw HTML body (or `.eml`) in
+`fixtures/raw/`, which is gitignored: real TrainingPeaks emails carry account
+and unsubscribe tokens in their links. Then
 
-During the ride the Exit, Back, Pause and Skip buttons stay hidden so a
-stray tap can't pause or quit. The first tap anywhere springs them up like the
-macOS dock; they sink away after 3 s without another tap, and stay up while
-paused.
+```bash
+npm run redact -- fixtures/raw/my-email.html fixtures/trainingpeaks-my-email.html
+```
 
-When the ride ends a share image is drawn on a canvas (`src/lib/summary-card.ts`)
-in two layouts: a 1080×1350 Data card and a 1080×1920 Story. Both show the
-profile with each block's planned peak watts on its bar, the heart-rate line,
-and min and max heart rate in red. **Save to Photos** opens the share sheet
-(Web Share with files); where that isn't available a full-screen image with
-press-and-hold instructions and a download link appears instead. Preview with
-`/?demo=1&fixture=overunder&bpm=150&at=end`, which starts 8 s before the finish
-with a simulated heart-rate trace.
+strips links, image sources, tracking URLs, email addresses and styles while
+keeping the workout markup intact. Read the result for names or personal notes
+before committing, and add a test that parses it.
 
-## Living background
+### Layout
 
-The ride screen sits on Animate UI's Bubble Background, ported to plain CSS
-in `src/components/animate-ui/components/backgrounds/bubble.tsx` and wrapped by
-`RideBackground`. Blob colours follow the block's intensity (work reds,
-recovery blues, warm-up/cool-down greys) at reduced opacity so the numerals
-keep their contrast, and the whole field pulses once per heartbeat: the CSS
-animation period is 60 / BPM, so a changing rate re-times the loop without
-restarting it. With no strap it breathes slowly. The BPM readout sits under
-the watt target, matching it in size. Preview without a strap: `/?demo=1&bpm=142`; add `&fixture=overunder` or
-`&fixture=steadystate` for those fixtures.
-Reduced-motion users get the flat tint.
+```
+src/lib/workout/      parser: types, zones, duration, target, step, text, email-html, expand, index, demo
+src/lib/mail/         IMAP source (imapflow + mailparser) and env config
+src/app/api/workout/  workout endpoint (token, or ?demo=1)
+src/app/api/settings/ zones and display settings (GET open, PUT needs the token)
+src/app/admin/        settings page
+src/components/       App (phases) · Confirm / ConfirmHero · Ride · Summary · WorkoutProfile · PlayheadFx · Admin
+src/lib/              timer helpers, audio cues, heart rate, profile geometry, settings, summary image, playhead effects
+src/components/animate-ui/  copied Animate UI primitives (lint-excluded)
+scripts/              parse, fetch and redact CLIs
+fixtures/             redacted sample emails used by tests and demo mode
+```
 
-## Motion
+## Design notes
 
-Animations come from [Animate UI](https://animate-ui.com) primitives copied
-into `src/components/animate-ui/` (the registry's manual install; they need
-only Motion, not Tailwind). Used: SlidingNumber for the rolling countdown
-digits, CountingNumber for watts on a block change, Blur for the zone label
-and next-up line on transitions, Fades to stagger the confirmation screen in,
-and RippleButton for Start. `MotionConfig reducedMotion="user"` disables them
-when the OS asks for reduced motion. That directory is excluded from lint.
+- **Profile chart** (`WorkoutProfile`, `src/lib/profile.ts`): one bar per
+  block, width = duration, height = top of the watt target, colour = your
+  power zone (from the middle of the block's watt range). The axis starts
+  below the easiest block so small steps show. Ridden time is full strength,
+  the current block pulses, and a black "now" line runs from its top to the
+  bottom of the screen with particles trailing behind (four styles, canvas).
+  Pulse and particles scale with heart rate between resting and max.
+- **Background** (`RideBackground`): Animate UI's bubble background in plain
+  CSS, coloured by block intensity, pulsing once per heartbeat (period =
+  60 / BPM).
+- **Motion**: rolling countdown digits, counting watts, blur transitions and a
+  spring for the controls, from [Animate UI](https://animate-ui.com) primitives
+  on [Motion](https://motion.dev). Respects reduced-motion settings.
+- **End-of-ride image** (`src/lib/summary-card.ts`): drawn straight onto a
+  canvas, so it renders the same in every browser. "Save to Photos" uses the
+  Web Share API with a file, called synchronously inside the tap as iOS
+  requires; where sharing files isn't supported, a full-screen image with a
+  press-and-hold hint and a download link appears instead.
+- **Type**: display sizes use II Balfron where licensed (see Fonts), with each
+  digit in a fixed-width cell so the countdown doesn't shift; reading text
+  uses Inter with tabular figures.
 
-## Typeface
+## Known gaps
 
-Display sizes (countdown, watts, labels, titles) use II Balfron by Evan
-Lelliott / Increments Type Foundry, loaded from `src/fonts/` with
-`next/font/local`. Its figures are proportional, so the countdown renders each
-digit in a fixed-width cell (0.27em, its typical digit advance) to stop the
-number shifting as it counts, and the narrow "1" is nudged onto its optical
-centre. Reading
-text uses Inter with tabular figures. Check the Balfron licence permits web
-embedding and redistribution before making this repository public.
+- The ride screen overflows on a 1920×1080 landscape display; numbers need
+  sizing by available height.
+- "Save to Photos" hasn't been confirmed inside Bluefy on iPhone.
 
-## Secrets
+## Privacy and secrets
 
-None in the repo. Mailbox settings and tokens live in Vercel environment
-variables; see `.env.example` for the names.
+No credentials live in the repo. Mailbox settings and tokens are environment
+variables only; `.env.local` and `fixtures/raw/` are gitignored and excluded
+from Vercel uploads. The workout endpoint and settings writes need
+`APP_TOKEN`; demo mode serves only the redacted fixtures.
+
+## Fonts
+
+Display sizes are designed around II Balfron (Evan Lelliott / Increments Type
+Foundry), a commercial face that is **not** in this repository and not covered
+by its licence. The app asks for it at `/fonts/display`, which serves:
+
+1. `private/fonts/ii-balfron.woff` if you have a licensed copy there (the
+   `private/` folder is gitignored and never uploaded), or
+2. `fonts/ii-balfron.woff` from the project's private Vercel Blob store, or
+3. nothing, in which case the open [League Gothic](https://fonts.google.com/specimen/League+Gothic)
+   is used instead.
+
+Without Balfron the countdown digits are slightly wider than their fixed cells
+were tuned for; to use another face, change the `@font-face` at the top of
+`src/app/globals.css`.
+
+## Licence
+
+[MIT](LICENSE), for the code. The II Balfron font is excluded (see above).

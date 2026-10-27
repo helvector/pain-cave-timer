@@ -166,5 +166,5 @@ export function App() {
     );
   }
 
-  return <Summary workout={phase.workout} hr={phase.hr} onDone={reload} />;
+  return <Summary workout={phase.workout} elapsedSec={phase.elapsedSec} hr={phase.hr} onDone={reload} />;
 }

@@ -4,11 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
-import { clock, positionAt, positionLabel, zoneLabel } from "@/lib/timer";
+import { clock, coachCues, isLastOfSet, positionAt, positionLabel, wattsLabel, zoneLabel } from "@/lib/timer";
 import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
 import { RideBackground } from "./RideBackground";
+import { MetricIcon } from "./MetricIcon";
 import { WorkoutProfile } from "./WorkoutProfile";
 import { addHrSample, type HrSample } from "@/lib/profile";
 import { hrIntensity, type PlayheadStyle } from "@/lib/settings";
@@ -22,6 +23,11 @@ const WATTS_SPRING = { stiffness: 140, damping: 28 };
 const DOCK_SPRING = { type: "spring", stiffness: 420, damping: 30, mass: 0.9 } as const;
 /** How long the controls stay up after the last tap. */
 const CONTROLS_MS = 3000;
+/** The "Next" line steps forward for the last stretch of a block. */
+/** How long the finish moment holds before the summary. */
+const FINISH_MS = 2600;
+/** Exits shorter than this are a change of mind, not a ride worth summarising. */
+const MIN_SUMMARY_SEC = 60;
 
 interface Props {
   workout: Workout;
@@ -52,6 +58,9 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const lastIndex = useRef(0);
+  const [finishing, setFinishing] = useState(false);
+  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (finishTimer.current) clearTimeout(finishTimer.current); }, []);
   const lastTick = useRef<string>("");
   const doneRef = useRef(false);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
@@ -107,7 +116,9 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
       if (!doneRef.current) {
         doneRef.current = true;
         cues.play("finish");
-        onDone(workout.totalSec, latest.current.hrTrace);
+        setFinishing(true);
+        const trace = latest.current.hrTrace;
+        finishTimer.current = setTimeout(() => onDone(workout.totalSec, trace), FINISH_MS);
       }
       return;
     }
@@ -123,6 +134,13 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
       }
     }
   }, [pos.finished, pos.index, pos.remainingSec, pos.block.cue, cues, onDone, workout.totalSec]);
+
+  /** Ending early still gets a summary of what was ridden, unless it was barely started. */
+  const exit = useCallback(() => {
+    const { elapsedSec: t, hrTrace: trace } = latest.current;
+    if (t < MIN_SUMMARY_SEC) onExit();
+    else onDone(Math.min(t, workout.totalSec), trace);
+  }, [onDone, onExit, workout.totalSec]);
 
   const togglePause = useCallback(() => {
     if (pausedAt === null) {
@@ -160,8 +178,10 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
   // last tap. While paused they stay up (Resume has to be reachable).
   const [controlsUp, setControlsUp] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [everRevealed, setEverRevealed] = useState(false);
   const reveal = useCallback(() => {
     setControlsUp(true);
+    setEverRevealed(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => setControlsUp(false), CONTROLS_MS);
   }, []);
@@ -170,25 +190,44 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
 
   const b = pos.block;
   const next = pos.next;
+  const cueList = coachCues(b);
+  const last = isLastOfSet(b);
 
   return (
     <main className={`ride ${b.kind}${pausedAt !== null ? " paused" : ""}`} onPointerDown={reveal}>
       <RideBackground kind={b.kind} bpm={bpm} />
       <Blur key={`top-${pos.index}`} className="top" initialBlur={8} transition={{ duration: 0.35 }}>
-        <span className="label">{zoneLabel(b)}</span>
-        <span>{positionLabel(b, workout.blocks.length)}</span>
+        {/* Zone and set position: only with the controls, so the screen stays on the numbers. Space stays reserved so nothing jumps. */}
+        <span className={`top__head${shown ? " is-shown" : ""}`}>
+          <span className="label">{zoneLabel(b)}</span>
+          <span>{positionLabel(b, workout.blocks.length)}</span>
+          {last && <span className="last">Last one</span>}
+        </span>
+        {cueList.length > 0 && (
+          <span className="coach" aria-label="Coach's targets">
+            {cueList.map((c) => (
+              <span key={c.kind} className={`coach__cue coach__cue--${c.kind}${c.value === "Open" ? " coach__cue--open" : ""}`}>
+                {c.kind !== "rpe" && <MetricIcon metric={c.kind === "cadence" ? "cadence" : "heart"} className="coach__icon" />}
+                {c.value}<small>{c.unit}</small>
+              </span>
+            ))}
+          </span>
+        )}
       </Blur>
 
       <div className="main">
         <div className={`time${pos.remainingSec >= 3600 ? " long" : ""}`} aria-label={clock(pos.remainingSec)}>
-          <RollingClock sec={pos.remainingSec} />
+          <span className="time__digits">
+            <MetricIcon metric="timer" size="large" className="time__icon metric-icon--headline" />
+            <RollingClock sec={pos.remainingSec} />
+          </span>
         </div>
         {b.target.watts ? (
           <div
             className="watts"
             aria-label={b.target.watts.hi !== b.target.watts.lo ? `${b.target.watts.lo} to ${b.target.watts.hi} watts` : `${b.target.watts.lo} watts`}
           >
-            <PowerIcon />
+            <MetricIcon metric="power" size="large" className="watts__icon metric-icon--headline" />
             <CountingNumber number={b.target.watts.lo} initiallyStable transition={WATTS_SPRING} />
             {b.target.watts.hi !== b.target.watts.lo && (
               <>–<CountingNumber number={b.target.watts.hi} initiallyStable transition={WATTS_SPRING} /></>
@@ -199,7 +238,7 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
         )}
         {bpm !== undefined && (
           <div className="hr" aria-label={`${bpm} beats per minute`}>
-            <span aria-hidden>♥</span>{bpm}
+            <MetricIcon metric="heart" size="large" className="hr__icon metric-icon--headline" />{bpm}
           </div>
         )}
         {pausedAt !== null && <p className="muted paused-note">Paused</p>}
@@ -216,6 +255,24 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
           playhead={playhead}
           className="profile--ride"
         />
+        {/* What's next: only with the controls, sitting just above them. */}
+        <motion.div
+          className="next"
+          initial={false}
+          animate={shown ? { y: 0, opacity: 1 } : { y: 60, opacity: 0 }}
+          transition={DOCK_SPRING}
+          aria-hidden={!shown}
+        >
+          <span className="next__k">Next</span>
+          {next ? (
+            <span className="next__v">
+              {clock(next.durationSec)}
+              {wattsLabel(next) && <><i>·</i>{wattsLabel(next)}<small>W</small></>}
+            </span>
+          ) : (
+            <span className="next__v">Finish</span>
+          )}
+        </motion.div>
         <motion.div
           className="controls"
           ref={controlsRef}
@@ -226,13 +283,15 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
           inert={!shown}
           aria-hidden={!shown}
         >
-          <button onClick={onExit}>Exit</button>
+          <button onClick={exit}>Exit</button>
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>
           <button onClick={togglePause}>{pausedAt !== null ? "Resume" : "Pause"}</button>
           <button onClick={() => jumpTo(pos.index + 1)} disabled={!next}>Skip</button>
         </motion.div>
-        {!shown && <p className="controls-hint" aria-hidden>Tap for controls</p>}
+        {!shown && !everRevealed && <p className="controls-hint" aria-hidden>Tap for controls</p>}
       </div>
+
+      {finishing && <FinishMoment workout={workout} />}
     </main>
   );
 }
@@ -267,14 +326,36 @@ function RollingClock({ sec }: { sec: number }) {
 }
 
 /**
- * Power mark to the left of the watt target, sized and placed like the heart
- * beside the heart rate. Drawn rather than the ⚡ emoji, which iOS renders in
- * colour; this one takes the number's colour.
+ * The beat between the last block and the summary: the session's name
+ * settles in out of a blur over the fully lit profile, then hands over.
  */
-function PowerIcon() {
+function FinishMoment({ workout }: { workout: Workout }) {
+  const sets = workout.blocks.filter((b) => b.kind === "work" && (!b.part || b.part.index === b.part.count)).length;
   return (
-    <svg className="watts__icon" viewBox="0 0 16 24" aria-hidden>
-      <path d="M10.5 0 1 13.5h6.2L4.8 24 15 9.8H8.6L10.5 0Z" fill="currentColor" />
-    </svg>
+    <motion.div
+      className="finish"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      role="status"
+    >
+      <motion.p
+        className="finish__word"
+        initial={{ opacity: 0, scale: 1.12, filter: "blur(18px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+      >
+        Done
+      </motion.p>
+      <motion.p
+        className="finish__line"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.55 }}
+      >
+        {clock(workout.totalSec)} ridden{sets ? ` · ${sets} interval${sets === 1 ? "" : "s"}` : ""}
+      </motion.p>
+    </motion.div>
   );
 }
+

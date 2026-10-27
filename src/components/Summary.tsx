@@ -6,9 +6,12 @@ import type { HrSample } from "@/lib/profile";
 import { hrStats, renderSummary, SUMMARY_LABELS, SUMMARY_VARIANTS, type SummaryVariant } from "@/lib/summary-card";
 import { formatClock } from "@/lib/workout/duration";
 import { useSettings } from "./SettingsProvider";
+import { MetricIcon } from "./MetricIcon";
 
 interface Props {
   workout: Workout;
+  /** Time actually ridden: the full session, or where an early exit stopped it. */
+  elapsedSec: number;
   hr: HrSample[];
   onDone: () => void;
 }
@@ -18,7 +21,17 @@ interface Props {
  * Both layouts are rendered as soon as this mounts, because iOS only allows
  * the share sheet inside the tap itself and canvas encoding is asynchronous.
  */
-export function Summary({ workout, hr, onDone }: Props) {
+/** A CSS font-family with its var()s resolved, which canvas `font` needs. */
+function resolvedFamily(family: string): string {
+  const probe = document.createElement("span");
+  probe.style.fontFamily = family;
+  document.body.appendChild(probe);
+  const value = getComputedStyle(probe).fontFamily;
+  probe.remove();
+  return value;
+}
+
+export function Summary({ workout, elapsedSec, hr, onDone }: Props) {
   const { zones, settings } = useSettings();
   const [variant, setVariant] = useState<SummaryVariant>("data");
   const [pngs, setPngs] = useState<Partial<Record<SummaryVariant, { url: string; file: File }>>>({});
@@ -29,9 +42,8 @@ export function Summary({ workout, hr, onDone }: Props) {
     let off = false;
     const urls: string[] = [];
     void (async () => {
-      const root = getComputedStyle(document.documentElement);
-      const display = root.getPropertyValue("--font-display").trim() || "sans-serif";
-      const ui = root.getPropertyValue("--font-ui").trim() || "system-ui, sans-serif";
+      const display = resolvedFamily("var(--font-display)") || "sans-serif";
+      const ui = resolvedFamily("var(--font-ui)") || "system-ui, sans-serif";
       await Promise.all([document.fonts.load(`100px ${display}`), document.fonts.load(`600 30px ${ui}`)]).catch(() => undefined);
       for (const v of SUMMARY_VARIANTS) {
         const canvas = renderSummary(v, { workout, hr, zones, hrRest: settings.hrRest, hrMax: settings.hrMax, display, ui });
@@ -59,12 +71,22 @@ export function Summary({ workout, hr, onDone }: Props) {
   };
 
   const s = hrStats(hr);
+  const complete = elapsedSec >= workout.totalSec - 1;
+  // Intervals finished: a multi-step interval counts once, on its last step.
+  const intervals = workout.blocks.filter((b) => b.kind === "work" && (!b.part || b.part.index === b.part.count));
+  const intervalsDone = intervals.filter((b) => b.startSec + b.durationSec <= elapsedSec + 1).length;
+  const title = workout.title.replace(/\s*\(demo\)$/, "");
   return (
     <main className="screen summary">
       <div className="summary__wrap">
-        <header>
-          <p className="muted small">Ride complete · {formatClock(workout.totalSec)}{s ? ` · ♥ ${s.min}–${s.max}` : ""}</p>
-          <h1>Nice work.</h1>
+        <header className="summary__head">
+          <h1>{title}</h1>
+          <p className="summary__line">
+            <span>{formatClock(Math.round(elapsedSec))} {complete ? "ridden" : <>of {formatClock(workout.totalSec)}</>}</span>
+            {intervals.length > 0 && <span>{intervalsDone} of {intervals.length} intervals</span>}
+            {s && <span className="summary__hr"><MetricIcon metric="heart" className="summary__hr-icon" />Peak {s.max}</span>}
+          </p>
+          {!complete && <p className="muted">Ended early.</p>}
         </header>
         <div className="summary__pick" role="tablist" aria-label="Image layout">
           {SUMMARY_VARIANTS.map((v) => (
@@ -81,7 +103,6 @@ export function Summary({ workout, hr, onDone }: Props) {
           <button className="primary" onClick={save} disabled={!png}>Save to Photos</button>
           <button onClick={onDone}>Done</button>
         </div>
-        <p className="muted small">{SUMMARY_LABELS[variant].name} · {SUMMARY_LABELS[variant].size}</p>
       </div>
 
       {fallback && png && (

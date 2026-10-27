@@ -63,6 +63,12 @@ export function parseCadence(text: string): Range | undefined {
   return m[1] !== undefined ? range(m[1], m[2]) : range(m[3]);
 }
 
+/** The session-wide "Cadence: 80-100 RPM" line in a workout description; undefined if absent. */
+export function parseDescriptionCadence(description: string | undefined): Range | undefined {
+  const m = description?.match(new RegExp(String.raw`cadence\s*:\s*((?:${RANGE})\s*rpm)`, "i"));
+  return m ? parseCadence(m[1]) : undefined;
+}
+
 /**
  * Pull a heart-rate target out of free text such as
  * "RPE: 7-8 Heart Rate: 93-96% of THR" or "HR 140-150 bpm".

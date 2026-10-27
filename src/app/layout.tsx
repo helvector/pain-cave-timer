@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import localFont from "next/font/local";
+import { Inter, League_Gothic } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 
 // Inter for reading text: large x-height, open counters, tabular figures.
 const inter = Inter({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
 
-// II Balfron for the display sizes: the countdown, watts, labels, titles.
-// Its digits are proportional, so the timer renders each digit in a fixed cell.
-const balfron = localFont({ src: "../fonts/ii-balfron.woff", variable: "--font-display", display: "swap", weight: "400" });
+// Display sizes (countdown, watts, labels, titles) use II Balfron, a licensed
+// face kept out of the public repo and served from /fonts/display (see
+// globals.css). League Gothic is the open fallback when it isn't available.
+const leagueGothic = League_Gothic({ subsets: ["latin"], variable: "--font-display-fallback", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Pain Cave Timer",
@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${balfron.variable}`}>
+    <html lang="en" className={`${inter.variable} ${leagueGothic.variable}`}>
       <body><Providers>{children}</Providers></body>
     </html>
   );

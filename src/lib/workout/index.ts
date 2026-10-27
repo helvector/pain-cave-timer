@@ -2,6 +2,7 @@ import type { ParsedEmail, Workout, WorkoutNode } from "./types";
 import { extractDays, resolveDate } from "./email-html";
 import { buildBlocks, expandRepeats } from "./expand";
 import { parseWorkoutText } from "./text";
+import { parseDescriptionCadence } from "./target";
 
 export * from "./types";
 export { formatClock, formatDuration, parseDuration } from "./duration";
@@ -27,6 +28,10 @@ export function assembleWorkout(
   ftp?: number,
 ): Workout {
   const { blocks, warnings } = buildBlocks(expandRepeats(nodes), ftp);
+  // The session-wide cadence covers work intervals that don't give their own;
+  // warm-ups, recoveries and cool-downs stay free.
+  const cadenceRpm = parseDescriptionCadence(meta.description);
+  if (cadenceRpm) for (const b of blocks) if (b.kind === "work" && !b.target.cadenceRpm) b.target.cadenceRpm = { ...cadenceRpm };
   const totalSec = blocks.reduce((a, b) => a + b.durationSec, 0);
   const all = [...(meta.warnings ?? []), ...warnings];
 
@@ -38,7 +43,7 @@ export function assembleWorkout(
   }
   if (!meta.isRestDay && blocks.length === 0) all.push("No steps parsed.");
 
-  return { ...meta, blocks, totalSec, warnings: all, unparsed: meta.unparsed ?? [] };
+  return { ...meta, ...(cadenceRpm && { cadenceRpm }), blocks, totalSec, warnings: all, unparsed: meta.unparsed ?? [] };
 }
 
 /** Parse a TrainingPeaks "Schedule for …" email (HTML body) into per-day workouts. */
