@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "parse": "tsx scripts/parse.ts",
-    "fetch": "tsx scripts/fetch.ts"
+    "fetch": "tsx scripts/fetch.ts",
+    "redact": "tsx scripts/redact-email.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.2",
@@ -39,5 +40,6 @@
     "tsx": "^4.19.0",
     "typescript": "^5",
     "vitest": "^3.2.0"
-  }
+  },
+  "license": "MIT"
 }

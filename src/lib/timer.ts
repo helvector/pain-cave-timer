@@ -66,3 +66,45 @@ export function positionLabel(block: Block, total: number): string {
   const parts = [block.set ? `${block.set.index} of ${block.set.count}` : undefined, block.part ? `${block.part.index}/${block.part.count}` : undefined].filter(Boolean);
   return parts.length ? parts.join(" · ") : `${block.index + 1} / ${total}`;
 }
+
+/** One of the coach's extra instructions for a block, shown under the zone label. */
+export interface CoachCue {
+  kind: "cadence" | "rpe" | "hr";
+  value: string;
+  unit: string;
+}
+
+const range = (lo: number, hi: number) => (lo === hi ? String(lo) : `${lo}–${hi}`);
+
+/**
+ * Cadence, effort and heart-rate instructions the coach wrote for a block,
+ * from the parsed target first and the step's notes as a fallback
+ * ("RPE: 7-8 Heart Rate: 93-96% of THR"). Cadence is always present: "Open"
+ * when the coach left it to the rider.
+ */
+export function coachCues(block: Block): CoachCue[] {
+  const { cadenceRpm, hrBpm, hrPctThr } = block.target;
+  const notes = block.notes ?? "";
+  const cues: CoachCue[] = [];
+  cues.push({ kind: "cadence", value: cadenceRpm ? range(cadenceRpm.lo, cadenceRpm.hi) : "Open", unit: "rpm" });
+  const rpe = notes.match(/RPE\s*:?\s*(\d+(?:\.\d+)?)(?:\s*[-–]\s*(\d+(?:\.\d+)?))?/i);
+  if (rpe) cues.push({ kind: "rpe", value: rpe[2] ? `${rpe[1]}–${rpe[2]}` : rpe[1], unit: "RPE" });
+  if (hrBpm) cues.push({ kind: "hr", value: range(hrBpm.lo, hrBpm.hi), unit: "bpm" });
+  else if (hrPctThr) cues.push({ kind: "hr", value: range(hrPctThr.lo, hrPctThr.hi), unit: "% THR" });
+  else {
+    const hr = notes.match(/(\d+)(?:\s*[-–]\s*(\d+))?\s*%\s*(?:of\s*)?THR/i);
+    if (hr) cues.push({ kind: "hr", value: hr[2] ? `${hr[1]}–${hr[2]}` : hr[1], unit: "% THR" });
+  }
+  return cues;
+}
+
+/** The block's cadence for the confirmation screen: "80–95 rpm", or "Open" when the coach gave none. */
+export function cadenceLabel(block: Block): string {
+  const c = block.target.cadenceRpm;
+  return c ? `${range(c.lo, c.hi)} rpm` : "Open";
+}
+
+/** True on the final interval of a repeat: the "last one" of the set. */
+export function isLastOfSet(block: Block): boolean {
+  return block.kind === "work" && !!block.set && block.set.count > 1 && block.set.index === block.set.count;
+}

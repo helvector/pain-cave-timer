@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { positionLabel, zoneLabel } from "../src/lib/timer";
+import { cadenceLabel, positionLabel, zoneLabel } from "../src/lib/timer";
 
 // Real email, 2026-10-06: three "Ramp up in 4 steps" intervals, each a nested
 // <ul> of four 4-minute steps alternating 220-235 W (under) and 240-250 W (over).
@@ -46,5 +46,19 @@ describe("over-under intervals (nested sub-steps)", () => {
   it("parses the second day too", () => {
     expect(parsed.days[1].title).toBe("Endurance Miles 1.00hrs");
     expect(parsed.days[1].blocks).toHaveLength(1);
+  });
+});
+
+describe("cadence", () => {
+  it("gives the session-wide 80-100 rpm to every Under and Over, Open elsewhere", () => {
+    expect(w.cadenceRpm).toEqual({ lo: 80, hi: 100 });
+    const labels = w.blocks.map((b) => `${b.title}:${cadenceLabel(b)}`);
+    expect(labels.slice(0, 6)).toEqual(["Warm up:Open", "Under:80–100 rpm", "Over:80–100 rpm", "Under:80–100 rpm", "Over:80–100 rpm", "Recovery:Open"]);
+    expect(labels.at(-1)).toBe("Cool Down:Open");
+  });
+
+  it("keeps a step's own cadence over the session's", () => {
+    const next = parsed.days[1];
+    expect(next.blocks[0].target.cadenceRpm).toEqual({ lo: 80, hi: 95 });
   });
 });

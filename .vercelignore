@@ -6,3 +6,4 @@ fixtures/raw/
 Assets/
 node_modules/
 .next/
+private/

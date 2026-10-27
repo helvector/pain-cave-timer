@@ -1,4 +1,14 @@
+/* II Balfron is licensed and not in the repo: /fonts/display serves it from a
+   local gitignored copy or the private Blob store, or 404s for public forks. */
+@font-face {
+  font-family: "II Balfron";
+  src: url("/fonts/display") format("woff");
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
+  --font-display: "II Balfron", var(--font-display-fallback), Impact, sans-serif;
   color-scheme: dark;
   --bg: #000;
   --fg: #fff;
@@ -14,6 +24,27 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Cadence / heart / power icons, stroked in the text colour. --icon-size is the
+   master square (1em by default); the SVG box is the cropped ink, and
+   vertical-align puts its centre on the cap-height centre of the type beside
+   it. --cap-mid is that centre above the baseline, measured from the fonts:
+   Inter figures and capitals 0.364em; II Balfron 0.333em. */
+.metric-icon {
+  --icon-size: 1em;
+  --cap-mid: 0.364em;
+  --h: calc(var(--icon-size) * var(--ih));
+  display: inline-block;
+  flex-shrink: 0;
+  height: var(--h);
+  width: calc(var(--h) * var(--ar));
+  vertical-align: calc(var(--cap-mid) - var(--h) / 2);
+}
+/* Time, power and heart rate on the ride screen: one ink height for all three,
+   40% of the figure height (0.676em in Balfron) of the smallest headline, the
+   watts / heart-rate line. The time is always larger, so this is its limit too. */
+.ride .metric-icon--headline { --h: var(--ride-icon-h); }
+.ride .watts .metric-icon, .ride .hr .metric-icon, .ride .coach .metric-icon, .summary__line .metric-icon { --cap-mid: 0.333em; }
 
 html, body {
   margin: 0;
@@ -130,12 +161,48 @@ p { margin: 0; line-height: 1.4; }
 .ride.work .top .label { color: var(--work); }
 .ride.recovery .top .label { color: var(--recovery); }
 .ride.warmup .top .label, .ride.cooldown .top .label { color: var(--easy); }
+/* Final interval of a repeat: a quiet tag beside the set position. */
+.ride .top__head {
+  flex-basis: 100%;
+  display: flex; justify-content: center; align-items: baseline; gap: 0.6em;
+  opacity: 0; transform: translateY(-0.25em);
+  transition: opacity 250ms ease, transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ride .top__head.is-shown { opacity: 1; transform: none; }
+.ride .top .last {
+  font-size: 0.8em; padding: 0.08em 0.4em 0; border-radius: 0.22em;
+  background: rgba(255, 255, 255, 0.16); color: #fff; letter-spacing: 0.06em;
+}
+/* The coach's cadence, effort and heart-rate targets: one line under the zone,
+   larger than the label so it reads with glasses on. */
+.ride .top .coach {
+  flex-basis: 100%;
+  display: flex; justify-content: center; align-items: baseline; gap: 0.75em;
+  font-size: 1.3em; line-height: 1; margin-top: 0.12em; color: #fff; letter-spacing: 0.01em;
+}
+.ride .coach__cue small {
+  font-size: 0.5em; letter-spacing: 0.1em; margin-left: 0.22em; color: rgba(255, 255, 255, 0.72);
+}
+.ride .coach__cue--hr { color: #ff6b6b; }
+.ride .coach__icon { --icon-size: 0.85em; margin-right: 0.22em; }
+/* Cadence leads the coach's line at 1.4× (its icon stays smaller than the headline icons). */
+.ride .coach__cue--cadence { font-size: 1.4em; }
+.ride .coach__cue--open { font-style: italic; color: rgba(255, 255, 255, 0.72); }
+.ride .coach__cue--hr small { color: rgba(255, 107, 107, 0.8); }
 .ride .main {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: clamp(2px, 1vmin, 10px); /* halved */
+}
+.ride {
+  /* Watts and heart-rate size, shared with the headline icons. */
+  --readout-fs: min(40.3vw, 26.9vh, calc((100vw - 48px) * 0.84 / 2.2)); /* +20% on the last size */
+  --ride-icon-h: calc(var(--readout-fs) * 0.676 * 0.4);
+  /* 0.06: at "10:00"–"59:59" the digits are widest and the hung timer icon
+     must still clear the screen edge (2.3 px spare at 402 px, 2.4 at 375). */
+  --ride-icon-gap: calc(var(--readout-fs) * 0.06);
 }
 .ride .time {
   /* 5 cells ≈ 1.3em wide: fill ~85% of the width in portrait, ~45% of the height in landscape. */
@@ -158,13 +225,22 @@ p { margin: 0; line-height: 1.4; }
  * "1" is the third child.
  */
 .time .c { display: inline-block; width: 0.13em; text-align: center; }
+.time__digits { display: inline-flex; align-items: center; position: relative; }
+/* Hung left of the digits so the clock itself doesn't move; centred on the
+   figures, whose ink centre is 0.0113em below the line box's centre. */
+.ride .time__icon {
+  position: absolute;
+  right: calc(100% + var(--ride-icon-gap));
+  top: 50%;
+  transform: translateY(calc(-50% + 0.0113em));
+}
 .time [data-slot="sliding-number-roller"] { width: 0.27em !important; }
 .time [data-slot="sliding-number-roller"] > span:nth-child(3) { padding-left: 0.03em; }
 .ride .time.long { font-size: min(46vw, 30vh); }
 .ride .watts {
   /* 2× the previous min(24vw, 16vh), capped so "220–235 W" (~2.2em in
      Balfron) still fits the width on a portrait phone. */
-  font-size: min(40.3vw, 26.9vh, calc((100vw - 48px) * 0.84 / 2.2)); /* +20% on the last size */
+  font-size: var(--readout-fs);
   /* Balfron figures fill ~0.67em of the line box; 0.82 trims the empty
      leading so time, watts and heart rate all fit a portrait phone. */
   line-height: 0.75;
@@ -175,21 +251,59 @@ p { margin: 0; line-height: 1.4; }
  * 0.55 of its own size, so it is ~0.3em tall, centred ~0.4em above the
  * baseline, with a ~0.05em gap; the icon is sized in the number's em instead.
  */
+/* What comes after this block: white, just above the controls, rising and
+   sinking with them (the ride-bottom's --reserve is the controls' height plus gap). */
+.ride-bottom .next {
+  position: absolute; left: 0; right: 0; bottom: var(--reserve);
+  display: flex; justify-content: center; align-items: baseline; gap: 0.45em;
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-size: clamp(1.7rem, 7.5vmin, 3.2rem); line-height: 1; white-space: nowrap;
+  color: #fff;
+  /* Reads over the brightest bars. */
+  text-shadow: 0 0 0.35em rgba(0, 0, 0, 0.85), 0 0 0.1em rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+.ride-bottom .next__k { font-size: 0.55em; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.8); }
+.ride-bottom .next__v i { font-style: normal; margin: 0 0.25em; color: rgba(255, 255, 255, 0.6); }
+.ride-bottom .next__v small { font-size: 0.5em; margin-left: 0.12em; }
+
+/* The finish: "Done" settles out of a blur, then the summary takes over. */
+.finish {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem;
+  /* The ride recedes out of focus behind the word rather than competing with it. */
+  background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.94) 70%);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  text-align: center; pointer-events: none;
+}
+.finish__word {
+  margin: 0; font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-size: min(58vw, 36vh); line-height: 0.82; text-transform: uppercase; letter-spacing: 0.01em;
+}
+.finish__line {
+  margin: 0; font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-size: clamp(1.8rem, 8.5vmin, 3.4rem); line-height: 1; color: rgba(255, 255, 255, 0.85);
+}
 /* Floats in the empty space above the countdown digits so pausing never pushes the layout. */
 .ride .paused-note { position: absolute; left: 0; right: 0; top: 0; margin: 0; text-align: center; font-size: 1.4rem; }
-.ride .watts__icon { display: inline-block; height: 0.32em; width: auto; vertical-align: 0.22em; margin-right: 0.06em; }
+/* Power and heart-rate icons hang left of their number: the negative margin
+   cancels the icon's width plus gap, so the figures alone are centred. */
+.ride .watts__icon, .ride .hr .hr__icon {
+  margin-left: calc(-1 * (var(--h) * var(--ar) + var(--ride-icon-gap)));
+  margin-right: var(--ride-icon-gap);
+}
 .ride .hr {
   /* Same size and face as the watt target, in heart-rate red. */
   font-family: var(--font-display), var(--font-ui), sans-serif;
   font-weight: 400;
-  font-size: min(40.3vw, 26.9vh, calc((100vw - 48px) * 0.84 / 2.2)); /* +20% on the last size */
+  font-size: var(--readout-fs);
   line-height: 0.75;
   color: #ff2b2b;
   text-align: center;
   white-space: nowrap;
 }
-.ride .hr span { font-size: 0.45em; vertical-align: 0.55em; margin-right: 0.12em; animation: beat var(--beat, 5s) ease-in-out infinite; display: inline-block; }
 .hr-row { font-size: 1.05rem; }
+.hr-row__icon { color: #ff4a4a; margin-right: 0.3em; }
 .hr-row button { padding: 10px 16px; font-size: 0.95rem; }
 .ride.paused .time { opacity: 0.5; }
 .controls { display: flex; gap: 10px; justify-content: space-between; padding-top: 14px; }
@@ -217,12 +331,6 @@ p { margin: 0; line-height: 1.4; }
   18%  { transform: scale(1.035); opacity: 0.62; }
   40%  { transform: scale(1.005); opacity: 0.55; }
   100% { transform: scale(1); opacity: 0.5; }
-}
-@keyframes beat {
-  0%   { transform: scale(1); }
-  18%  { transform: scale(1.25); }
-  40%  { transform: scale(1.02); }
-  100% { transform: scale(1); }
 }
 
 /* Bubble Background port: same geometry as the Tailwind original. */
@@ -252,7 +360,6 @@ p { margin: 0; line-height: 1.4; }
 
 @media (prefers-reduced-motion: reduce) {
   .ride-bg { display: none; }
-  .ride .hr span { animation: none; }
 }
 
 /* ---- workout profile (replaces the flat progress strip) ---------------- */
@@ -284,10 +391,13 @@ p { margin: 0; line-height: 1.4; }
   padding-top: 0;
 }
 .ride-bottom .controls button {
-  background: rgba(0, 0, 0, 0.25); /* 25% black so labels read over the bars */
-  color: rgba(255, 255, 255, 0.8);
+  /* Dark enough that the labels read over the brightest bars. */
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.15rem;
 }
-.ride-bottom .controls button:disabled { color: var(--muted); }
+.ride-bottom .controls button:disabled { color: rgba(255, 255, 255, 0.45); opacity: 1; }
 .profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
 .profile rect { transition: fill-opacity 300ms ease; }
 
@@ -325,17 +435,27 @@ p { margin: 0; line-height: 1.4; }
 .admin__slider input[type="range"] { width: 100%; accent-color: #ff2b2b; padding: 0; border: 0; background: none; }
 .admin__bpm { color: #ff2b2b; }
 
-/* Hidden-controls hint: a faint line where the dock sits, fading out after the first tap. */
+/* Hidden-controls hint: a faint line where the dock sits, gone after the first tap. */
 .controls-hint {
   position: absolute; left: 0; right: 0; bottom: max(22px, env(safe-area-inset-bottom));
   margin: 0; text-align: center; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35); pointer-events: none;
+  color: rgba(255, 255, 255, 0.6); pointer-events: none;
 }
 
 /* ---- end-of-ride summary ------------------------------------------------ */
 .summary { align-items: center; }
 .summary__wrap { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; }
-.summary h1 { font-size: 2.4rem; }
+.summary__head { display: flex; flex-direction: column; gap: 10px; }
+.summary h1 { font-size: clamp(2.6rem, 11vw, 4rem); line-height: 0.92; text-transform: uppercase; text-wrap: balance; }
+/* What was actually ridden, as one line of display type rather than stat tiles. */
+.summary__line {
+  display: flex; flex-wrap: wrap; column-gap: 0.7em; row-gap: 0.1em;
+  font-family: var(--font-display), var(--font-ui), sans-serif;
+  font-size: clamp(1.5rem, 6.4vw, 2.1rem); line-height: 1.05; text-transform: uppercase; letter-spacing: 0.01em;
+}
+.summary__line span + span::before { content: "·"; margin-right: 0.7em; color: var(--muted); }
+.summary__hr { color: #ff4a4a; }
+.summary__hr-icon { margin-right: 0.3em; }
 .summary__pick { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: #0f0f12; align-self: flex-start; }
 .summary__pick button { padding: 8px 16px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); font-size: 0.9rem; }
 .summary__pick button.on { background: #fff; color: #000; font-weight: 600; }
@@ -362,6 +482,7 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { font-size: 0.85rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
 .chip b { color: var(--fg); font-weight: 600; margin-right: 3px; }
+.chip__icon { color: var(--fg); margin-right: 5px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .cv__actions .primary { flex: 1; }
 
@@ -376,16 +497,20 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 /* Block list: stacked vertically (portrait), one full-width row per block, zone stripe on the left. */
 .cards { display: flex; flex-direction: column; gap: 6px; }
 .cards__card {
-  display: grid; grid-template-columns: 1.6em auto 1fr; column-gap: 12px; align-items: center;
-  padding: 10px 14px 10px 12px; border-radius: 12px; background: #0f0f12; border-left: 5px solid var(--z);
+  display: grid; grid-template-columns: 1.15em auto 1fr; column-gap: 10px; align-items: center;
+  padding: 10px 10px 10px 8px; border-radius: 12px; background: #0f0f12; border-left: 5px solid var(--z);
 }
 .cards__n { color: var(--muted); font-size: 0.85rem; text-align: right; }
 /* Wide enough for "15:00" so the watts line up down the list. */
-.cards__dur { font-family: var(--font-display), var(--font-ui), sans-serif; font-size: 2.3rem; line-height: 0.9; min-width: 1.3em; }
-.cards__info { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.cards__dur { font-family: var(--font-display), var(--font-ui), sans-serif; font-size: 2.3rem; line-height: 0.9; min-width: 1.22em; }
+.cards__info { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .cards__w { color: #fff; font-weight: 600; white-space: nowrap; }
 .cards__w small { color: #fff; font-size: 0.62em; font-weight: 600; margin-left: 2px; }
-.cards__name { color: var(--muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cards__name { color: var(--muted); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* Cadence keeps its full width; the zone name gives way first. */
+.cards__rpm { color: #fff; font-size: 0.8rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.cards__rpm small { font-size: 0.72em; margin-left: 1px; }
+.cards__rpm--open { color: var(--muted); font-weight: 400; font-style: italic; }
 .dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));

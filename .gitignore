@@ -25,3 +25,10 @@ coverage/
 
 # original font drop; the copy the app uses is src/fonts/
 Assets/
+
+# Licensed fonts for the owner and contributors who hold a licence; never public.
+# Production loads them from the private Blob store (see /fonts/display).
+private/
+
+# design-critique tool working files
+.impeccable/

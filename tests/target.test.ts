@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCadence, parseHeartRateTarget, parsePowerTarget } from "../src/lib/workout/target";
+import { parseCadence, parseDescriptionCadence, parseHeartRateTarget, parsePowerTarget } from "../src/lib/workout/target";
 
 describe("parsePowerTarget", () => {
   it("absolute watts", () => {
@@ -41,5 +41,14 @@ describe("parseHeartRateTarget", () => {
   });
   it("ignores text without a heart-rate target", () => {
     expect(parseHeartRateTarget("Power: 88-94% of FTP")).toBeUndefined();
+  });
+});
+
+describe("parseDescriptionCadence", () => {
+  it("reads the Intensity Ranges line", () =>
+    expect(parseDescriptionCadence("Intensity Ranges:\nRPE: 8-10\nHeart Rate: 93-100% of THR\nCadence: 80-100 RPM")).toEqual({ lo: 80, hi: 100 }));
+  it("is undefined without one", () => {
+    expect(parseDescriptionCadence("Ride easy.")).toBeUndefined();
+    expect(parseDescriptionCadence(undefined)).toBeUndefined();
   });
 });

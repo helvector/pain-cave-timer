@@ -1,9 +1,10 @@
 "use client";
 
 import type { Block, Workout } from "@/lib/workout/types";
-import { clock, wattsLabel, zoneLabel } from "@/lib/timer";
+import { cadenceLabel, clock, wattsLabel, zoneLabel } from "@/lib/timer";
 import { blockZone, type PowerZone } from "@/lib/profile";
 import { WorkoutProfile } from "./WorkoutProfile";
+import { MetricIcon } from "./MetricIcon";
 
 /**
  * The confirmation screen layout ("Hero", chosen Oct 2026): tall profile with
@@ -38,6 +39,7 @@ function Stats({ w }: { w: Workout }) {
       <span className="chip"><b>{clock(w.totalSec)}</b> total</span>
       <span className="chip"><b>{w.blocks.length}</b> blocks</span>
       {w.tss ? <span className="chip"><b>{w.tss}</b> TSS</span> : null}
+      {w.cadenceRpm ? <span className="chip"><MetricIcon metric="cadence" className="chip__icon" /><b>{w.cadenceRpm.lo === w.cadenceRpm.hi ? w.cadenceRpm.lo : `${w.cadenceRpm.lo}–${w.cadenceRpm.hi}`}</b> rpm</span> : null}
     </div>
   );
 }
@@ -78,7 +80,8 @@ export function ConfirmHero(p: Parts) {
                 <span className="cards__dur">{clock(b.durationSec)}</span>
                 <span className="cards__info">
                   <span className="cards__w">{wattsLabel(b) ?? "—"}<small>W</small></span>
-                  <span className="cards__name">{z?.name ?? zoneLabel(b)}{b.set ? ` · ${b.set.index}/${b.set.count}` : ""}</span>
+                  <span className="cards__name">{z?.name ?? zoneLabel(b)}{b.set ? `\u2009·\u2009${b.set.index}/${b.set.count}` : ""}</span>
+                  <span className={`cards__rpm${b.target.cadenceRpm ? "" : " cards__rpm--open"}`}>{cadenceLabel(b).replace(/ rpm$/, "")}{b.target.cadenceRpm && <small>rpm</small>}</span>
                 </span>
               </div>
             );
