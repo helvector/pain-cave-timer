@@ -19,6 +19,7 @@
     "redact": "tsx scripts/redact-email.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.8.2",
     "imapflow": "^2.0.5",
     "mailparser": "^3.9.28",
