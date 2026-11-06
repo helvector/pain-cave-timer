@@ -37,8 +37,16 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   (one step line), `target.ts` (watts, cadence, heart rate), `expand.ts`
   (repeats, over-under groups, set numbering), `index.ts` (assembles a
   `Workout`), `demo.ts` (demo fixtures).
-- `src/lib/mail/` IMAP fetch. `src/app/api/workout` (bearer `APP_TOKEN`),
-  `src/app/api/settings` (GET open, PUT needs `APP_TOKEN`; Blob store).
+- `src/lib/mail/` IMAP fetch; `cache.ts` keeps the five newest emails in the
+  private Blob store (`mail-cache/<VERCEL_ENV>.json`; the store is shared by
+  all environments, so never drop the env from the path).
+  `src/app/api/workout` (bearer `APP_TOKEN`) answers from that copy when it
+  covers the date (`src/lib/workout/load.ts`), else reads the mailbox;
+  `fresh=1` (Reload) always reads it. `src/app/api/cron/refresh` (bearer
+  `CRON_SECRET`, `vercel.json` crons) fills it. `src/app/api/settings` (GET
+  open, PUT needs `APP_TOKEN`; Blob store).
+- Mail credentials are Production-only env vars, and crons only run on
+  production, so previews and local dev can't exercise the live mail path.
 - `src/components/`: `App` (phases), `Confirm` + `ConfirmVariants` (`ConfirmHero`
   is the confirmation screen), `Ride`, `Summary` (end-of-ride image),
   `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin), `Splash`
@@ -80,8 +88,8 @@ the splash).
 
 ## Rules
 
-- **Never commit secrets.** Mail config, `APP_TOKEN`, `BLOB_READ_WRITE_TOKEN`
-  live in Vercel env vars only. Treat the repo as public.
+- **Never commit secrets.** Mail config, `APP_TOKEN`, `BLOB_READ_WRITE_TOKEN`,
+  `CRON_SECRET` live in Vercel env vars only. Treat the repo as public.
 - **No real names** of the coach or anyone else in code, fixtures, commits.
 - **Preview before production.** For any visual change, deploy a preview and
   send links (demo URLs with the right fixture) before committing. Commit and

@@ -73,7 +73,8 @@ function AppScreens() {
   }, [demoBpm]);
   const liveBpm = demoBpm ? (simBpm ?? demoBpm) : heartRate.status === "connected" ? heartRate.bpm : undefined;
 
-  const load = useCallback(async () => {
+  // fresh: read the mailbox instead of the saved copy (the Reload button).
+  const load = useCallback(async (fresh = false) => {
     const token = readToken();
     if (!token && !demo) {
       setPhase({ name: "token" });
@@ -82,6 +83,7 @@ function AppScreens() {
     const qs = new URLSearchParams();
     if (params.get("date")) qs.set("date", params.get("date")!);
     if (demo) qs.set("demo", "1");
+    if (fresh && !demo) qs.set("fresh", "1");
     if (demo && params.get("fixture")) qs.set("fixture", params.get("fixture")!);
     try {
       if (demoWaitMs) await new Promise((r) => setTimeout(r, demoWaitMs));
@@ -106,10 +108,12 @@ function AppScreens() {
     }
   }, [demo, demoWaitMs, params]);
 
-  const reload = useCallback(() => {
+  const reload = useCallback((fresh = false) => {
     setPhase({ name: "loading" });
-    void load();
+    void load(fresh);
   }, [load]);
+  const refresh = useCallback(() => reload(true), [reload]);
+  const backToStart = useCallback(() => reload(false), [reload]);
 
   useEffect(() => {
     // Kick off the first load from a callback rather than the effect body itself.
@@ -136,7 +140,7 @@ function AppScreens() {
           onSubmit={(e) => {
             e.preventDefault();
             try { localStorage.setItem(TOKEN_KEY, tokenInput.trim()); } catch { /* private mode */ }
-            reload();
+            backToStart();
           }}
         >
           <h1>Access token</h1>
@@ -155,7 +159,7 @@ function AppScreens() {
           <h1>Couldn&apos;t load the workout</h1>
           <p className="notice">{phase.message}</p>
           <div className="row">
-            <button onClick={reload}>Try again</button>
+            <button onClick={refresh}>Try again</button>
             <button onClick={() => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } setPhase({ name: "token" }); }}>Change token</button>
           </div>
         </div>
@@ -170,7 +174,7 @@ function AppScreens() {
         selected={phase.selected}
         onSelect={(w) => setPhase({ name: "confirm", result: phase.result, selected: w })}
         onStart={() => setPhase({ name: "ride", workout: phase.selected })}
-        onReload={reload}
+        onReload={refresh}
         heartRate={heartRate}
       />
     );
@@ -185,10 +189,10 @@ function AppScreens() {
         startAtSec={atEnd ? Math.max(0, phase.workout.totalSec - 8) : 0}
         seedHr={atEnd ? syntheticHr(phase.workout, phase.workout.totalSec - 8) : undefined}
         onDone={(elapsedSec, hr) => setPhase({ name: "done", workout: phase.workout, elapsedSec, hr })}
-        onExit={reload}
+        onExit={backToStart}
       />
     );
   }
 
-  return <Summary workout={phase.workout} elapsedSec={phase.elapsedSec} hr={phase.hr} onDone={reload} />;
+  return <Summary workout={phase.workout} elapsedSec={phase.elapsedSec} hr={phase.hr} onDone={backToStart} />;
 }

@@ -77,7 +77,8 @@ built for [Vercel](https://vercel.com).
    | `MAIL_FROM` | Sender to trust: `messages-no-reply@trainingpeaks.com` |
    | `APP_TIMEZONE` | Your IANA time zone, so "today" is right (Vercel runs in UTC) |
    | `APP_TOKEN` | A long random string; the app asks for it once and stores it on the device |
-   | `BLOB_READ_WRITE_TOKEN` | A private [Vercel Blob](https://vercel.com/docs/vercel-blob) store for `/admin` settings (added for you when you connect a store) |
+   | `BLOB_READ_WRITE_TOKEN` | A private [Vercel Blob](https://vercel.com/docs/vercel-blob) store for `/admin` settings and the saved emails (added for you when you connect a store) |
+   | `CRON_SECRET` | A long random string; Vercel Cron sends it to `/api/cron/refresh`. Without it the cron is refused; loads still work, reading the mailbox whenever the saved copy doesn't cover the day |
    | `FTP_WATTS` | Optional. Only needed if your coach writes targets as % of FTP |
    | `THR_BPM` | Optional. Turns "84-92% of THR" notes into a BPM range |
 
@@ -102,11 +103,19 @@ npm run fetch -- --date 2026-10-24 --json
 TrainingPeaks email ─IMAP─▶ /api/workout ─▶ parser ─▶ Workout { blocks[] } ─▶ Confirm ─▶ Ride ─▶ Summary
 ```
 
-1. **Fetch.** `GET /api/workout?date=yyyy-mm-dd` (bearer `APP_TOKEN`) opens a
-   short-lived IMAP connection, reads the newest messages from `MAIL_FROM`, and
-   parses each until one contains the date. Each email covers two days, so
-   yesterday's session is taken from the email before, for its own tab. There
-   is no nearest-day fallback: a missing date is a 404 listing the days seen.
+1. **Fetch.** A cron job (`/api/cron/refresh`, scheduled in `vercel.json` at
+   13:40, 21:40 and 23:40 UTC, after the nightly email) opens a short-lived
+   IMAP connection, reads the five newest messages from `MAIL_FROM`, and saves
+   them to the private Blob store (`mail-cache/<environment>.json`, with the
+   time it read them). `GET /api/workout?date=yyyy-mm-dd` (bearer `APP_TOKEN`)
+   answers from that copy when it covers the date and is under 36 hours old;
+   otherwise, or with `fresh=1` (the Reload button), it reads the mailbox
+   itself and saves the result. The response says which (`source: "cache"` or
+   `"live"`), with `fetchedAt` and `durationMs`. The emails are kept raw and
+   parsed on each request, so parser or FTP changes apply at once. Each email
+   covers two days, so yesterday's session is taken from the email before,
+   for its own tab. There is no nearest-day fallback: a missing date is a 404
+   listing the days seen.
 2. **Extract.** `email-html.ts` anchors on TrainingPeaks' markup: one
    `h1.formattedDate` per day, the title, Time and TSS, the description, and
    an `<ol>` of steps.
@@ -157,8 +166,9 @@ before committing, and add a test that parses it.
 
 ```
 src/lib/workout/      parser: types, zones, duration, target, step, text, email-html, expand, index, demo
-src/lib/mail/         IMAP source (imapflow + mailparser) and env config
-src/app/api/workout/  workout endpoint (token, or ?demo=1)
+src/lib/mail/         IMAP source (imapflow + mailparser), env config, saved-email cache
+src/app/api/workout/  workout endpoint (token, or ?demo=1; cache first, fresh=1 for live)
+src/app/api/cron/     refresh: saves the newest emails (CRON_SECRET)
 src/app/api/settings/ zones and display settings (GET open, PUT needs the token)
 src/app/admin/        settings page
 src/components/       App (phases) · Confirm / ConfirmHero · Ride · Summary · WorkoutProfile · PlayheadFx · Admin
