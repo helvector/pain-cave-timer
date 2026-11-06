@@ -24,7 +24,7 @@ export interface ParseOptions {
 /** Tree → Workout. Shared by the email and text entry points. */
 export function assembleWorkout(
   nodes: WorkoutNode[],
-  meta: Pick<Workout, "date" | "title" | "isRestDay" | "plannedSec" | "tss" | "description"> & { warnings?: string[]; unparsed?: string[] },
+  meta: Pick<Workout, "date" | "title" | "isRestDay" | "plannedSec" | "tss" | "description" | "strength"> & { warnings?: string[]; unparsed?: string[] },
   ftp?: number,
 ): Workout {
   const { blocks, warnings } = buildBlocks(expandRepeats(nodes), ftp);
@@ -41,7 +41,7 @@ export function assembleWorkout(
   for (const b of blocks) {
     if (!b.target.watts) all.push(`Step ${b.index + 1} ("${b.title}") has no watt target${b.target.raw ? ` (${b.target.raw})` : ""}.`);
   }
-  if (!meta.isRestDay && blocks.length === 0) all.push("No steps parsed.");
+  if (!meta.isRestDay && !meta.strength?.length && blocks.length === 0) all.push("No steps parsed.");
 
   return { ...meta, ...(cadenceRpm && { cadenceRpm }), blocks, totalSec, warnings: all, unparsed: meta.unparsed ?? [] };
 }
@@ -59,6 +59,7 @@ export function parseTrainingPeaksEmail(html: string, opts: ParseOptions = {}): 
       plannedSec: d.plannedSec,
       tss: d.tss,
       description: d.description,
+      ...(d.strength && { strength: d.strength }),
       warnings: d.warnings,
       unparsed: d.unparsed,
     }, opts.ftp);

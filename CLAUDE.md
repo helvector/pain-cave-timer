@@ -59,8 +59,12 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
 - Cadence: the step's own rpm wins; work intervals without one take the
   description's "Intensity Ranges … Cadence: 80-100 RPM"; anything else shows
   **Open**.
-- Emails cover two days and can include rest days, strength sessions and
-  non-ride items (a "Monthly Call"); ignore those.
+- Emails cover two days and can include rest days and non-ride items (a
+  "Monthly Call"); ignore those.
+- Gym sessions sit in a `<!-- Structured Strength -->` section before the
+  rides: title, Sets, Exercises and the coach's notes only (the exercise list
+  is behind TrainingPeaks' "View Workout"). Parsed into `Workout.strength`;
+  a day with gym work and no blocks has no ride and no Start.
 - Add a fixture for every new email shape and a test against it. Raw mail goes
   in gitignored `fixtures/raw/`; commit only the `npm run redact` output and
   check it for names first.
@@ -68,7 +72,7 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
 ## Demo and design review
 
 `/?demo=1` runs without a mailbox or token. Params:
-`fixture=sweetspot|overunder|steadystate|review` (`review` = ten real sessions
+`fixture=sweetspot|overunder|steadystate|gym|review` (`review` = ten real sessions
 as ten day tabs), `bpm=150` (simulated heart rate), `at=end` (start 8 s before
 the finish with a synthetic heart-rate trace, to see the end screen),
 `fx=ember|comet|plasma|stardust`, `wait=5` (hold the loading screen 5 s after

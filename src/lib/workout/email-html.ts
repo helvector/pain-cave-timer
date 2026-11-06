@@ -1,5 +1,5 @@
 import { parse as parseHtml, type HTMLElement } from "node-html-parser";
-import type { StepNode, WorkoutNode } from "./types";
+import type { StepNode, StrengthSession, WorkoutNode } from "./types";
 import { parseDuration } from "./duration";
 import { parseStepLine } from "./step";
 import { parseHeartRateTarget, type TargetOptions } from "./target";
@@ -17,6 +17,7 @@ export interface RawDay {
   warnings: string[];
   /** Counter for multi-step interval groups within this day. */
   groupSeq: number;
+  strength?: StrengthSession[];
 }
 
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
@@ -32,7 +33,10 @@ function text(el: HTMLElement | null | undefined): string {
  * .structureTitle and target spans.
  */
 export function extractDays(html: string, opts: TargetOptions = {}): RawDay[] {
-  const root = parseHtml(html, { comment: false });
+  // Gym sessions sit in their own marked section before the rides; take them
+  // out first so a gym title is never read as the ride's.
+  const { rest, strengthByDate } = takeStrength(html);
+  const root = parseHtml(rest, { comment: false });
   const days: RawDay[] = [];
 
   for (const h1 of root.querySelectorAll("h1.formattedDate, h1")) {
@@ -41,9 +45,12 @@ export function extractDays(html: string, opts: TargetOptions = {}): RawDay[] {
     const container = closest(h1, "dayBlockContainer") ?? h1.parentNode;
     if (!container) continue;
 
-    const title = text(container.querySelector("h2")) || "Untitled workout";
+    const strength = strengthByDate.get(dateText);
+    const rideTitle = text(container.querySelector("h2"));
+    const gymOnly = !rideTitle && !!strength?.length;
+    const title = rideTitle || (gymOnly ? strength.map((g) => g.title).join(" · ") : "Untitled workout");
     const isRestDay = /^rest\s*day$/i.test(title);
-    const day: RawDay = { dateText, title, isRestDay, nodes: [], unparsed: [], warnings: [], groupSeq: 0 };
+    const day: RawDay = { dateText, title, isRestDay, nodes: [], unparsed: [], warnings: [], groupSeq: 0, ...(strength?.length && { strength }) };
 
     // "Time" and "TSS" sit as <p>label</p><h3>value</h3> pairs.
     for (const p of container.querySelectorAll("p")) {
@@ -65,11 +72,53 @@ export function extractDays(html: string, opts: TargetOptions = {}): RawDay[] {
 
     const ol = container.querySelector("ol");
     if (ol) day.nodes = parseList(ol, day, opts);
-    else if (!isRestDay) day.warnings.push("No structured steps found in the email for this day.");
+    else if (!isRestDay && !gymOnly) day.warnings.push("No structured steps found in the email for this day.");
 
     days.push(day);
   }
   return days;
+}
+
+const DAY_H1 = /<h1[^>]*class="formattedDate"[^>]*>([\s\S]*?)<\/h1>/gi;
+const STRENGTH_SECTION = /<!--\s*Structured Strength:\s*START\s*-->([\s\S]*?)<!--\s*Structured Strength:\s*END\s*-->/gi;
+
+/**
+ * Cut the "Structured Strength" sections out of the email and parse them,
+ * keyed by the day heading ("Friday, October 23") they sit under.
+ */
+function takeStrength(html: string): { rest: string; strengthByDate: Map<string, StrengthSession[]> } {
+  const heads = [...html.matchAll(DAY_H1)].map((m) => ({ at: m.index ?? 0, date: m[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() }));
+  const strengthByDate = new Map<string, StrengthSession[]>();
+  for (const m of html.matchAll(STRENGTH_SECTION)) {
+    const date = heads.filter((h) => h.at < (m.index ?? 0)).at(-1)?.date;
+    const sessions = parseStrengthSection(m[1]);
+    if (date && sessions.length) strengthByDate.set(date, [...(strengthByDate.get(date) ?? []), ...sessions]);
+  }
+  return { rest: html.replace(STRENGTH_SECTION, ""), strengthByDate };
+}
+
+/** One section can hold several sessions, each opened by a "workoutTag". */
+function parseStrengthSection(section: string): StrengthSession[] {
+  const out: StrengthSession[] = [];
+  for (const part of section.split(/<div[^>]*class="workoutTag"[^>]*>/i).slice(1)) {
+    const el = parseHtml(part, { comment: false });
+    const title = text(el.querySelector("h2"));
+    if (!title) continue;
+    const session: StrengthSession = { title, notes: [] };
+    // "Sets" and "Exercises" are <p>label</p><h3>value</h3> pairs, like Time and TSS.
+    for (const p of el.querySelectorAll("p")) {
+      const label = text(p).toLowerCase();
+      if (label !== "sets" && label !== "exercises") continue;
+      const n = Number(text(p.parentNode?.querySelector("h3")));
+      if (Number.isFinite(n) && n > 0) session[label] = n;
+    }
+    // The coach's notes: the paragraph that is neither a label nor the
+    // centred "View and log your workout…" button text.
+    const body = el.querySelectorAll("p").find((p) => !/^(sets|exercises)$/i.test(text(p)) && !p.closest("center"));
+    if (body) session.notes = paragraphText(body).split(/\n\s*\n/).map((t) => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+    out.push(session);
+  }
+  return out;
 }
 
 /** Text with <br> runs turned into newlines, trimmed. */

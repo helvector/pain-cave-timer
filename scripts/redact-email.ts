@@ -2,7 +2,7 @@
  * Turn a raw TrainingPeaks email (saved in gitignored fixtures/raw/) into a
  * fixture that is safe to commit: links, image sources, tracking URLs and
  * email addresses become "#", styles and comments other than the section
- * markers are dropped, and whitespace is collapsed. Workout content is kept
+ * markers are dropped, and whitespace is collapsed (blank lines kept). Workout content is kept
  * exactly, so the parser sees the same structure.
  *
  *   npm run redact -- fixtures/raw/tp-2026-10-24.html fixtures/trainingpeaks-2026-10-24.html
@@ -23,7 +23,8 @@ const html = readFileSync(src, "utf8")
   .replace(/\sstyle\s*=\s*("[^"]*"|'[^']*')/gi, "")
   .replace(/https?:\/\/[^\s"'<>]+/gi, "#")
   .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "#")
-  .replace(/\s+/g, " ");
+  // Collapse whitespace, but keep blank lines: they separate the coach's paragraphs.
+  .replace(/\s+/g, (ws) => (/\n[^\S\n]*\n/.test(ws) ? "\n\n" : " "));
 
 writeFileSync(dest, html);
 console.log(`${src} → ${dest} (${html.length} bytes)`);

@@ -518,6 +518,20 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .cards__rpm { color: #fff; font-size: 0.8rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .cards__rpm small { font-size: 0.72em; margin-left: 1px; }
 .cards__rpm--open { color: var(--muted); font-weight: 400; font-style: italic; }
+/* Gym session text: display-face title and chips like the ride header,
+   notes in the reading face at a comfortable measure. */
+.gym { display: flex; flex-direction: column; gap: 28px; }
+.gym__session { display: flex; flex-direction: column; gap: 12px; }
+.gym__kicker { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.gym__title {
+  margin: -6px 0 0; font-family: var(--font-display), var(--font-ui), sans-serif; font-weight: 400;
+  text-transform: uppercase; font-size: 2.1rem; line-height: 0.95;
+}
+.gym__note { font-size: 1.02rem; line-height: 1.5; max-width: 62ch; color: var(--fg); }
+.gym__where { color: var(--muted); font-size: 0.85rem; }
+/* After a ride's block list, the gym session gets the same separation as the buttons. */
+.cards + .gym { margin-top: 40px; }
+
 /* Admin and Demo, out of the way below the block list (the pinned dock stays for Start). */
 /* 72px + the list's 16px gap = twice the buttons' 44px height above them. */
 .cv__links { display: flex; gap: 10px; margin-top: 72px; }

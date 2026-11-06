@@ -1,6 +1,6 @@
 "use client";
 
-import type { Block, Workout } from "@/lib/workout/types";
+import type { Block, StrengthSession, Workout } from "@/lib/workout/types";
 import { cadenceLabel, clock, wattsLabel, zoneLabel } from "@/lib/timer";
 import { blockZone, type PowerZone } from "@/lib/profile";
 import { WorkoutProfile } from "./WorkoutProfile";
@@ -36,6 +36,17 @@ function timeInZone(w: Workout, zones: PowerZone[]) {
 }
 
 function Stats({ w }: { w: Workout }) {
+  // A gym-only day has no ride numbers: show the session's own.
+  if (!w.blocks.length && w.strength?.length) {
+    const sets = w.strength.reduce((a, g) => a + (g.sets ?? 0), 0);
+    const exercises = w.strength.reduce((a, g) => a + (g.exercises ?? 0), 0);
+    return (
+      <div className="chips">
+        {sets ? <span className="chip"><b>{sets}</b> sets</span> : null}
+        {exercises ? <span className="chip"><b>{exercises}</b> exercises</span> : null}
+      </div>
+    );
+  }
   return (
     <div className="chips">
       <span className="chip"><b>{clock(w.totalSec)}</b> total</span>
@@ -43,6 +54,33 @@ function Stats({ w }: { w: Workout }) {
       {w.tss ? <span className="chip"><b>{w.tss}</b> TSS</span> : null}
       {w.cadenceRpm ? <span className="chip"><MetricIcon metric="cadence" className="chip__icon" /><b>{w.cadenceRpm.lo === w.cadenceRpm.hi ? w.cadenceRpm.lo : `${w.cadenceRpm.lo}–${w.cadenceRpm.hi}`}</b> rpm</span> : null}
     </div>
+  );
+}
+
+/**
+ * The coach's gym session as text: title in the display face (left out when it
+ * is already the day's title), sets and exercises as chips, then the notes.
+ */
+function Gym({ sessions, showTitle }: { sessions: StrengthSession[]; showTitle: boolean }) {
+  return (
+    <section className="gym" aria-label="Gym">
+      {sessions.map((g, i) => (
+        <div key={i} className="gym__session">
+          {showTitle && (
+            <>
+              <p className="gym__kicker">Gym</p>
+              <h2 className="gym__title">{g.title}</h2>
+              <div className="chips">
+                {g.sets ? <span className="chip"><b>{g.sets}</b> sets</span> : null}
+                {g.exercises ? <span className="chip"><b>{g.exercises}</b> exercises</span> : null}
+              </div>
+            </>
+          )}
+          {g.notes.map((n, j) => <p key={j} className="gym__note">{n}</p>)}
+          <p className="gym__where">The exercises are listed in the TrainingPeaks app.</p>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -62,8 +100,9 @@ export function ConfirmHero(p: Parts) {
         {p.dayTabs}
         {p.issues}
         {w.isRestDay && <p className="cv__rest">Rest day. Nothing to ride.</p>}
-        {!w.isRestDay && <WorkoutProfile workout={w} className="profile--hero" blockLabels />}
-        <div className="tiz" aria-label="Time in zone">
+        {!w.isRestDay && w.blocks.length > 0 && <WorkoutProfile workout={w} className="profile--hero" blockLabels />}
+        {!w.blocks.length && w.strength?.length ? <Gym sessions={w.strength} showTitle={false} /> : null}
+        {w.blocks.length > 0 && <div className="tiz" aria-label="Time in zone">
           <div className="tiz__bar">
             {tiz.map(({ zone, sec }) => <span key={zone.id} style={{ flexGrow: sec / total, background: zone.color }} />)}
           </div>
@@ -72,7 +111,7 @@ export function ConfirmHero(p: Parts) {
               <li key={zone.id}><span className="dot" style={{ background: zone.color }} />{zone.name}<b>{clock(sec)}</b></li>
             ))}
           </ul>
-        </div>
+        </div>}
         <div className="cards" role="list">
           {w.blocks.map((b) => {
             const z = zoneOf(b, zones);
@@ -89,6 +128,7 @@ export function ConfirmHero(p: Parts) {
             );
           })}
         </div>
+        {w.blocks.length > 0 && w.strength?.length ? <Gym sessions={w.strength} showTitle /> : null}
         <nav className="cv__links">
           <a className="cv__link" href="/admin">Admin</a>
           {/* Demo runs on the redacted sample sessions, no mailbox or token. Plain links on purpose:

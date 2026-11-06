@@ -61,6 +61,19 @@ export interface Block {
   notes?: string;
 }
 
+/**
+ * A gym session from the email's "Structured Strength" section. The email
+ * carries only the summary and the coach's notes; the exercise list itself is
+ * behind TrainingPeaks' "View Workout" link.
+ */
+export interface StrengthSession {
+  title: string;
+  sets?: number;
+  exercises?: number;
+  /** The coach's notes, one entry per paragraph. */
+  notes: string[];
+}
+
 export interface Workout {
   /** ISO calendar date, yyyy-mm-dd. */
   date: string;
@@ -79,6 +92,8 @@ export interface Workout {
   warnings: string[];
   /** Lines the parser could not understand. Shown, never silently dropped. */
   unparsed: string[];
+  /** Gym sessions on this day. A day with gym work and no blocks has no ride. */
+  strength?: StrengthSession[];
 }
 
 /** One TrainingPeaks schedule email covers two days. */

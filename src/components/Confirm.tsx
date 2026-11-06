@@ -35,14 +35,15 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
         <div className="days" role="tablist" aria-label="Days">
           {days.map((d) => (
             <button key={d.date} role="tab" aria-current={d.date === w.date} onClick={() => onSelect(d)}>
-              {niceDate(d.date)}{d.isRestDay ? " · rest" : ""}
+              {niceDate(d.date)}{d.isRestDay ? " · rest" : !d.blocks.length && d.strength?.length ? " · gym" : ""}
             </button>
           ))}
         </div>
       ) : null,
       issues: issues.length ? <div className="notice" role="alert">Check before you start:<ul>{issues.map((m, i) => <li key={i}>{m}</li>)}</ul></div> : null,
       heartRate: <HeartRateRow hr={heartRate} />,
-      startButton: w.isRestDay ? null : (
+      // Nothing to ride on a rest day or a gym-only day.
+      startButton: w.isRestDay || w.blocks.length === 0 ? null : (
         <RippleButton className="primary" onClick={onStart} hoverScale={1.03} tapScale={0.96}>
           Start
           <RippleButtonRipples color="rgba(0, 0, 0, 0.25)" />

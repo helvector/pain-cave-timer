@@ -23,6 +23,11 @@ const FIXTURES = {
     read: () => readFileSync(path.join(process.cwd(), "fixtures/trainingpeaks-steadystate-4x8.html"), "utf8"),
     subject: "Schedule for Tuesday 10/13/2026 to Wednesday 10/14/2026",
   },
+  // A ride today and a gym session ("Cycling Specific Weight Work") tomorrow.
+  gym: {
+    read: () => readFileSync(path.join(process.cwd(), "fixtures/trainingpeaks-2026-10-22.html"), "utf8"),
+    subject: "Schedule for Thursday 10/22/2026 to Friday 10/23/2026",
+  },
 } as const;
 
 /**

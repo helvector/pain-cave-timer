@@ -31,6 +31,9 @@ Built for a phone propped on the handlebars in portrait, read mid-effort.
 - **End-of-ride image.** A 4:5 data card or 9:16 story with the session
   profile, planned peak watts per block and min/max heart rate, saved to Photos
   through the share sheet.
+- **Gym days.** The coach's gym sessions ("Cycling Specific Weight Work") show
+  as text: sets, exercises and the coach's notes. The exercise list itself
+  isn't in the email, only in the TrainingPeaks app.
 - **Yesterday too.** The start screen has a tab for yesterday's session next
   to today and tomorrow, and Admin and Demo buttons at the bottom.
 - **Your zones, your colours.** Edit power zones, colours, resting/max heart
@@ -50,7 +53,7 @@ redacted sample emails in `fixtures/` and needs no configuration.
 |---|---|
 | `demo=1` | Use sample workouts instead of the mailbox; no token needed |
 | `fixture=review` | Ten real sessions as ten day tabs: steady state, sweet spot, 3.5 h endurance, recovery, power ladders, step ramps, two over-under shapes |
-| `fixture=sweetspot` · `overunder` · `steadystate` | A single sample email (two days) |
+| `fixture=sweetspot` · `overunder` · `steadystate` · `gym` | A single sample email (two days); `gym` is a ride plus a gym session |
 | `bpm=150` | Simulate a heart-rate strap |
 | `at=end` | Start 8 s before the finish with a simulated heart-rate trace, to see the end screen |
 | `fx=ember` · `comet` · `plasma` · `stardust` | Preview a "now" line style |
