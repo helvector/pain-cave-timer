@@ -49,6 +49,7 @@ export function Confirm({ result, selected, onSelect, onStart, onReload, heartRa
         </RippleButton>
       ),
       reloadButton: <button onClick={onReload}>Reload</button>,
+      demo: result.demo,
     };
   return <ConfirmHero {...parts} />;
 }

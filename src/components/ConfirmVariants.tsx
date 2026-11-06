@@ -22,6 +22,8 @@ interface Parts {
   heartRate: React.ReactNode;
   startButton: React.ReactNode;
   reloadButton: React.ReactNode;
+  /** Showing sample data: the Demo link becomes Exit demo. */
+  demo?: boolean;
 }
 
 const zoneOf = (b: Block, zones: PowerZone[]) => zones.find((z) => z.id === blockZone(b, undefined, zones));
@@ -87,6 +89,13 @@ export function ConfirmHero(p: Parts) {
             );
           })}
         </div>
+        <nav className="cv__links">
+          <a className="cv__link" href="/admin">Admin</a>
+          {/* Demo runs on the redacted sample sessions, no mailbox or token. Plain links on purpose:
+              App reads ?demo once on load, so switching needs a full page load, not a client route. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          {p.demo ? <a className="cv__link" href="/">Exit demo</a> : <a className="cv__link" href="/?demo=1&fixture=review">Demo</a>}
+        </nav>
       </div>
       <div className="dock">
         <div className="dock__hr">{p.heartRate}</div>

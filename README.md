@@ -31,6 +31,8 @@ Built for a phone propped on the handlebars in portrait, read mid-effort.
 - **End-of-ride image.** A 4:5 data card or 9:16 story with the session
   profile, planned peak watts per block and min/max heart rate, saved to Photos
   through the share sheet.
+- **Yesterday too.** The start screen has a tab for yesterday's session next
+  to today and tomorrow, and Admin and Demo buttons at the bottom.
 - **Your zones, your colours.** Edit power zones, colours, resting/max heart
   rate and the "now" line style at `/admin`.
 
@@ -98,7 +100,8 @@ TrainingPeaks email ─IMAP─▶ /api/workout ─▶ parser ─▶ Workout { bl
 
 1. **Fetch.** `GET /api/workout?date=yyyy-mm-dd` (bearer `APP_TOKEN`) opens a
    short-lived IMAP connection, reads the newest messages from `MAIL_FROM`, and
-   parses each until one contains the date. Each email covers two days. There
+   parses each until one contains the date. Each email covers two days, so
+   yesterday's session is taken from the email before, for its own tab. There
    is no nearest-day fallback: a missing date is a 404 listing the days seen.
 2. **Extract.** `email-html.ts` anchors on TrainingPeaks' markup: one
    `h1.formattedDate` per day, the title, Time and TSS, the description, and

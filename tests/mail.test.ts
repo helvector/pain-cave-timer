@@ -83,6 +83,21 @@ describe("fetchWorkoutFor", () => {
     expect(r.workout?.isRestDay).toBe(true);
     expect(r.days).toHaveLength(4);
   });
+  it("adds yesterday from the email before, keeping the newest copy of today", async () => {
+    const dayBefore = html.replace("September 10", "September 9").replace("September 11", "September 10");
+    const r = await fetchWorkoutFor({
+      async latest() {
+        return [
+          msg("Schedule for Thursday 09/10/2026 to Friday 09/11/2026", "2026-09-09T21:21:11Z"),
+          msg("Schedule for Wednesday 09/09/2026 to Thursday 09/10/2026", "2026-09-08T21:21:11Z", dayBefore),
+          msg("Schedule for Thursday 09/03/2026 to Friday 09/04/2026", "2026-09-02T21:21:11Z", olderHtml),
+        ];
+      },
+    }, "2026-09-10");
+    expect(r.days.map((d) => d.date).sort()).toEqual(["2026-09-09", "2026-09-10", "2026-09-11"]);
+    expect(r.days.find((d) => d.date === "2026-09-10")).toBe(r.workout);
+    expect(r.workout?.title).toMatch(/Sweet Spot/);
+  });
   it("reports when nothing matches", async () => {
     const r = await fetchWorkoutFor(source, "2026-09-20");
     expect(r.workout).toBeUndefined();

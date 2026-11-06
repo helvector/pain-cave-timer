@@ -42,7 +42,8 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   `src/app/api/settings` (GET open, PUT needs `APP_TOKEN`; Blob store).
 - `src/components/`: `App` (phases), `Confirm` + `ConfirmVariants` (`ConfirmHero`
   is the confirmation screen), `Ride`, `Summary` (end-of-ride image),
-  `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin).
+  `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin), `Splash`
+  (opening animation, "Stamp", once per page load).
 - `src/lib/settings.ts` zones, playhead style, hrRest/hrMax defaults;
   `power-zones.ts` the rider's watt zones; `summary-card.ts` canvas share image;
   `playhead-fx.ts` the "now" line.

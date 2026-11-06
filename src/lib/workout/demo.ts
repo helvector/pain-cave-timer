@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseTrainingPeaksEmail } from "./index";
 import type { Workout } from "./types";
+import { addDays } from "../date";
 
 /**
  * The redacted fixture as a workout, for trying the UI without a mailbox.
@@ -50,20 +51,15 @@ export function isDemoFixture(name: string | null): name is DemoFixture {
 }
 
 /** `iso` plus `n` days. */
-function addDays(iso: string, n: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 export function demoWorkouts(todayISO: string, opts: { ftp?: number; thr?: number; fixture?: DemoFixture } = {}): Workout[] {
   if (opts.fixture === "review") {
-    // Shifted onto today and the nine days after it, so each gets its own tab.
+    // Shifted onto yesterday, today and the eight days after, so each gets its own tab.
     return REVIEW.map((r, i) => {
       const { days } = parseTrainingPeaksEmail(r.read(), { ftp: opts.ftp, thr: opts.thr, subject: r.subject });
       const day = days.find((d) => d.date === r.date);
       if (!day) throw new Error(`Review fixture has no ${r.date}`);
-      return { ...day, date: addDays(todayISO, i), title: `${day.title} (demo)` };
+      return { ...day, date: addDays(todayISO, i - 1), title: `${day.title} (demo)` };
     });
   }
   const fx = FIXTURES[opts.fixture ?? "sweetspot"];

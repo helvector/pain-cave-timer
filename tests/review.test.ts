@@ -4,9 +4,9 @@ import { demoWorkouts } from "../src/lib/workout/demo";
 describe("design review demo", () => {
   const days = demoWorkouts("2026-11-01", { fixture: "review" });
 
-  it("has ten ride days, one per date from today", () => {
+  it("has ten ride days, one per date from yesterday", () => {
     expect(days).toHaveLength(10);
-    expect(days.map((d) => d.date)).toEqual(Array.from({ length: 10 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`));
+    expect(days.map((d) => d.date)).toEqual(["2026-10-31", ...Array.from({ length: 9 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`)]);
     expect(days.every((d) => !d.isRestDay && d.blocks.length > 0)).toBe(true);
   });
 

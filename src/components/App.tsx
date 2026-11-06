@@ -9,6 +9,7 @@ import { PLAYHEAD_STYLES, type PlayheadStyle } from "@/lib/settings";
 import { Summary } from "./Summary";
 import { syntheticHr } from "@/lib/demo-hr";
 import type { HrSample } from "@/lib/profile";
+import { Splash } from "./Splash";
 
 const TOKEN_KEY = "pct.token";
 
@@ -34,7 +35,19 @@ function readToken(): string {
   try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
 }
 
+/** The app, with the opening splash played once over it on page load. */
 export function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  const endSplash = useCallback(() => setSplashDone(true), []);
+  return (
+    <>
+      <AppScreens />
+      {!splashDone && <Splash onDone={endSplash} />}
+    </>
+  );
+}
+
+function AppScreens() {
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [tokenInput, setTokenInput] = useState("");
   const heartRate = useHeartRate();

@@ -6,3 +6,10 @@ export function todayIn(timeZone: string, now: Date = new Date()): string {
 export function appTimeZone(env: Record<string, string | undefined> = process.env): string {
   return env.APP_TIMEZONE?.trim() || "America/Los_Angeles";
 }
+
+/** The calendar date `n` days after `iso` (negative for before). */
+export function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}

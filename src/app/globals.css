@@ -518,6 +518,14 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .cards__rpm { color: #fff; font-size: 0.8rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .cards__rpm small { font-size: 0.72em; margin-left: 1px; }
 .cards__rpm--open { color: var(--muted); font-weight: 400; font-style: italic; }
+/* Admin and Demo, out of the way below the block list (the pinned dock stays for Start). */
+/* 72px + the list's 16px gap = twice the buttons' 44px height above them. */
+.cv__links { display: flex; gap: 10px; margin-top: 72px; }
+.cv__link {
+  padding: 12px 28px;
+  border: 1px solid var(--line); border-radius: 12px;
+  color: var(--muted); text-decoration: none; font-size: 0.95rem;
+}
 .dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
@@ -533,3 +541,38 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .profile__label { position: absolute; display: flex; flex-direction: column; align-items: center; padding-top: 0.35em; }
 .profile__label-time { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 0.82; color: #000; white-space: nowrap; }
 .profile__label-w { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 1; color: #000; opacity: 0.8; white-space: nowrap; margin-top: 0.15em; }
+
+/* Opening splash (Splash.tsx): full-screen over the loading state, ~2.7 s.
+   Same gutter and 720px column as the screens, content left-aligned. The
+   icons and words fill the top 60% of the screen below a band of air:
+   each word is trimmed to its capital height (text-box), so the stack is
+   3 caps + 2 gaps = 3 × 0.671 + 2 × 0.08 = 2.173 × the font size. */
+.splash {
+  --pad-top: max(20px, env(safe-area-inset-top));
+  --air: 6svh;
+  --icon-fs: min(14vw, 64px);
+  --icon-gap: 3svh;
+  --col: min(100vw - 40px, 720px);
+  position: fixed; inset: 0; z-index: 50; background: #000; color: #fff;
+  display: flex; justify-content: center; align-items: flex-start; overflow: hidden; pointer-events: none;
+  padding: var(--pad-top) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+}
+.splash__stage {
+  width: 100%; max-width: 720px; padding-top: var(--air);
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--icon-gap);
+}
+.splash .metric-icon { --icon-size: 1em; }
+/* Row height = the tallest icon's ink (timer, 0.844 of its box). */
+.splash__icons { display: flex; gap: min(7vw, 34px); font-size: var(--icon-fs); }
+.splash__icon { display: inline-flex; }
+.splash__words {
+  /* Height-led; capped so TIMER (1.235em wide) stays inside the column. */
+  font-size: min((60svh - var(--pad-top) - var(--air) - var(--icon-fs) * 0.844 - var(--icon-gap)) / 2.173, var(--col) / 1.235);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.08em;
+}
+/* Slams grow from the left edge so each word lands in place on the gutter. */
+.splash__word {
+  display: block; font-family: var(--font-display), var(--font-ui), sans-serif;
+  line-height: 1; text-box: trim-both cap alphabetic;
+  text-transform: uppercase; white-space: nowrap; transform-origin: left center;
+}
