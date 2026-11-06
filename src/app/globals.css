@@ -235,6 +235,11 @@ p { margin: 0; line-height: 1.4; }
   transform: translateY(calc(-50% + 0.0113em));
 }
 .time [data-slot="sliding-number-roller"] { width: 0.27em !important; }
+.ride .time [data-slot="sliding-number-roller"] {
+  /* Fade rolling digits into the background at the cell's outer edges. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.2) 7%, #000 18%, #000 82%, rgba(0, 0, 0, 0.2) 93%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.2) 7%, #000 18%, #000 82%, rgba(0, 0, 0, 0.2) 93%, transparent 100%);
+}
 .time [data-slot="sliding-number-roller"] > span:nth-child(3) { padding-left: 0.03em; }
 .ride .time.long { font-size: min(46vw, 30vh); }
 .ride .watts {
