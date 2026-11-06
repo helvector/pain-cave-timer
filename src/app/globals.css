@@ -224,7 +224,9 @@ p { margin: 0; line-height: 1.4; }
  * roller the first child is a hidden "0" placeholder, then digits 0–9, so the
  * "1" is the third child.
  */
-.time .c { display: inline-block; width: 0.13em; text-align: center; }
+/* Balfron's colon sits low (ink centre 0.1875em above the baseline, the
+   digits' 0.333em), so it is lifted by the difference to centre on them. */
+.time .c { display: inline-block; width: 0.13em; text-align: center; position: relative; top: -0.1455em; }
 .time__digits { display: inline-flex; align-items: center; position: relative; }
 /* Hung left of the digits so the clock itself doesn't move; centred on the
    figures, whose ink centre is 0.0113em below the line box's centre. */
