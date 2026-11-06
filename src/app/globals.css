@@ -205,7 +205,7 @@ p { margin: 0; line-height: 1.4; }
   --ride-icon-gap: calc(var(--readout-fs) * 0.06);
 }
 .ride .time {
-  /* 5 cells ≈ 1.3em wide: fill ~85% of the width in portrait, ~45% of the height in landscape. */
+  /* 5 cells ≈ 1.3em wide: fills ~85% of the width in portrait. */
   font-size: min(66vw, 44vh);
   line-height: 1;
   white-space: nowrap;
@@ -541,6 +541,20 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .profile__label { position: absolute; display: flex; flex-direction: column; align-items: center; padding-top: 0.35em; }
 .profile__label-time { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 0.82; color: #000; white-space: nowrap; }
 .profile__label-w { font-family: var(--font-display), var(--font-ui), sans-serif; line-height: 1; color: #000; opacity: 0.8; white-space: nowrap; margin-top: 0.15em; }
+
+/* Loading: the timer icon with its hand sweeping round, above the label. */
+.loading { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.loading__timer { --icon-size: 52px; color: var(--fg); } /* 44px tall */
+/* The hand path starts at the dial centre and runs up-right, so its own
+   box's bottom-left corner is the pivot. */
+.loading__timer .metric-icon__hand {
+  transform-box: fill-box; transform-origin: 0% 100%;
+  animation: timer-hand 1.2s linear infinite;
+}
+@keyframes timer-hand { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .loading__timer .metric-icon__hand { animation-duration: 4s; }
+}
 
 /* Opening splash (Splash.tsx): full-screen over the loading state, ~2.7 s.
    Same gutter and 720px column as the screens, content left-aligned. The

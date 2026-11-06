@@ -10,6 +10,7 @@ import { Summary } from "./Summary";
 import { syntheticHr } from "@/lib/demo-hr";
 import type { HrSample } from "@/lib/profile";
 import { Splash } from "./Splash";
+import { MetricIcon } from "./MetricIcon";
 
 const TOKEN_KEY = "pct.token";
 
@@ -62,6 +63,8 @@ function AppScreens() {
   const atEnd = demo && params.get("at") === "end";
   // Demo only: ?bpm=142 simulates a connected strap so the pulse can be previewed.
   const demoBpm = demo && params.get("bpm") ? Number(params.get("bpm")) : undefined;
+  // Demo only: ?wait=5 holds the loading screen that many seconds, to see it after the splash.
+  const demoWaitMs = demo && params.get("wait") ? Math.min(30, Number(params.get("wait")) || 0) * 1000 : 0;
   const [simBpm, setSimBpm] = useState<number>();
   useEffect(() => {
     if (!demoBpm) return;
@@ -81,6 +84,7 @@ function AppScreens() {
     if (demo) qs.set("demo", "1");
     if (demo && params.get("fixture")) qs.set("fixture", params.get("fixture")!);
     try {
+      if (demoWaitMs) await new Promise((r) => setTimeout(r, demoWaitMs));
       const res = await fetch(`/api/workout?${qs}`, { headers: demo ? {} : { Authorization: `Bearer ${token}` }, cache: "no-store" });
       const body = (await res.json()) as ApiResult;
       if (res.status === 401) {
@@ -100,7 +104,7 @@ function AppScreens() {
     } catch (err) {
       setPhase({ name: "error", message: err instanceof Error ? err.message : String(err) });
     }
-  }, [demo, params]);
+  }, [demo, demoWaitMs, params]);
 
   const reload = useCallback(() => {
     setPhase({ name: "loading" });
@@ -114,7 +118,14 @@ function AppScreens() {
   }, [load]);
 
   if (phase.name === "loading") {
-    return <main className="screen center"><p className="muted">Loading workout…</p></main>;
+    return (
+      <main className="screen center">
+        <div className="loading">
+          <MetricIcon metric="timer" size="large" className="loading__timer" />
+          <p className="muted">Loading workout…</p>
+        </div>
+      </main>
+    );
   }
 
   if (phase.name === "token") {

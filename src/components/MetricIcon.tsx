@@ -8,6 +8,9 @@
  * so the element's box is the drawing itself. CSS then sits the box's centre
  * on the cap-height centre of the type beside it (see `.metric-icon` in
  * globals.css): exact vertical centring, and spacing measured from the ink.
+ *
+ * The timer's hand is its own path (`.metric-icon__hand`, pivot at the dial
+ * centre = the path's start) so it can be spun, as on the loading screen.
  */
 
 export type Metric = "cadence" | "heart" | "power" | "timer";
@@ -25,7 +28,7 @@ const MASTERS = {
     cadence: <><path d="M22 26.392A12 12 0 1 1 26.392 10M21 10h5.392V5" /><circle cx="16" cy="16" r="2" /><path d="m17.5 17.5 4.5 4.5m-3 0h6" /></>,
     heart: <><path d="M16 27C13 24.5 4 18 4 11.5 4 4.5 12 3 16 9c4-6 12-4.5 12 2.5C28 18 19 24.5 16 27Z" /><path d="M9 16h3l2-4 4 8 2-4h3" /></>,
     power: <path d="m18 4-11 14h8l-2 10 12-15h-8l1-9Z" />,
-    timer: <><circle cx="16" cy="18" r="10" /><path d="M12 3h8m-4 0v5m7 3 3-3M16 18l4-4" /></>,
+    timer: <><circle cx="16" cy="18" r="10" /><path d="M12 3h8m-4 0v5m7 3 3-3" /><path className="metric-icon__hand" d="M16 18l4-4" /></>,
   },
   large: {
     box: 64,
@@ -33,7 +36,7 @@ const MASTERS = {
     cadence: <><path d="M44 52.785A24 24 0 1 1 52.785 20M43 20h9.785v-9.5" /><circle cx="32" cy="32" r="4" /><path d="m35 35 9 9m-6 0h13" /></>,
     heart: <><path d="M32 54C25.5 48.5 8 36 8 23 8 9 24 6 32 18c8-12 24-9 24 5 0 13-17.5 25.5-24 31Z" /><path d="M18 32h6l4-8.5 8 17 4-8.5h6" /></>,
     power: <path d="M36.5 8 14 36h16l-4.5 20L50 26H34l2.5-18Z" />,
-    timer: <><circle cx="32" cy="36" r="20.5" /><path d="M24.5 6h15M32 6v9.5m14.5 6 5.5-5.5M32 36l8.5-8.5" /></>,
+    timer: <><circle cx="32" cy="36" r="20.5" /><path d="M24.5 6h15M32 6v9.5m14.5 6 5.5-5.5" /><path className="metric-icon__hand" d="M32 36l8.5-8.5" /></>,
   },
 } as const;
 

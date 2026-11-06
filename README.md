@@ -6,7 +6,7 @@ If your coach plans your sessions in [TrainingPeaks](https://www.trainingpeaks.c
 you already get a "Schedule for …" email every evening with tomorrow's
 workout. Pain Cave Timer reads that email, turns it into a list of blocks
 (duration, target watts, zone, cadence), shows you the session to check, then
-runs it full screen on your phone or a TV: one block at a time, big numbers,
+runs it full screen on your phone: one block at a time, big numbers,
 an audio cue on every change, and live heart rate if you have a strap.
 
 Built for a phone propped on the handlebars in portrait, read mid-effort.
@@ -54,6 +54,7 @@ redacted sample emails in `fixtures/` and needs no configuration.
 | `bpm=150` | Simulate a heart-rate strap |
 | `at=end` | Start 8 s before the finish with a simulated heart-rate trace, to see the end screen |
 | `fx=ember` · `comet` · `plasma` · `stardust` | Preview a "now" line style |
+| `wait=5` | Hold the loading screen for 5 s, to see it after the opening splash |
 
 ## Run your own
 
@@ -190,8 +191,6 @@ fixtures/             redacted sample emails used by tests and demo mode
 
 ## Known gaps
 
-- The ride screen overflows on a 1920×1080 landscape display; numbers need
-  sizing by available height.
 - "Save to Photos" hasn't been confirmed inside Bluefy on iPhone.
 
 ## Privacy and secrets

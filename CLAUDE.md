@@ -11,8 +11,7 @@ on it.
 
 - One rider, iPhone 17 Pro in **portrait, 402×874**, in the **Bluefy** browser
   (Web Bluetooth) with a Whoop broadcasting heart rate. Design and verify at
-  that size first. TV/landscape (1920×1080) is secondary and currently overflows
-  on the ride screen (known, not fixed).
+  that size. It's an iPhone app: no TV or landscape layout to support.
 - Readouts are read mid-effort: big, high-contrast, one line where possible, no
   sideways scrolling, nothing that needs a precise tap.
 
@@ -72,7 +71,8 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
 `fixture=sweetspot|overunder|steadystate|review` (`review` = ten real sessions
 as ten day tabs), `bpm=150` (simulated heart rate), `at=end` (start 8 s before
 the finish with a synthetic heart-rate trace, to see the end screen),
-`fx=ember|comet|plasma|stardust`.
+`fx=ember|comet|plasma|stardust`, `wait=5` (hold the loading screen 5 s after
+the splash).
 
 ## Rules
 
