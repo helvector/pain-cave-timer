@@ -2,6 +2,8 @@
 
 A glanceable interval timer for coached indoor cycling.
 
+![The start screen with the session's shape, the ride screen mid-interval, and the end-of-ride data card](docs/screenshots/hero.png)
+
 If your coach plans your sessions in [TrainingPeaks](https://www.trainingpeaks.com),
 you already get a "Schedule for …" email every evening with tomorrow's
 workout. Pain Cave Timer reads that email, turns it into a list of blocks
@@ -10,6 +12,37 @@ runs it full screen on your phone: one block at a time, big numbers,
 an audio cue on every change, and live heart rate if you have a strap.
 
 Built for a phone propped on the handlebars in portrait, read mid-effort.
+
+**[Try the demo →](https://paincavetimer.vercel.app/?demo=1&fixture=review)**
+ten sample sessions, no account or mailbox needed. Add `&bpm=150` to simulate
+a heart-rate strap.
+
+## Screens
+
+<table>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/splash.png" alt="Opening splash: four metric icons and PAIN CAVE TIMER in tall condensed type"></td>
+    <td width="33%" align="center"><img src="docs/screenshots/start.png" alt="Start screen: title, total time, blocks, TSS, day tabs, the session's bar chart coloured by power zone, time in each zone and the block list"></td>
+    <td width="33%" align="center"><img src="docs/screenshots/ride.png" alt="Ride screen: cadence target, countdown, target watts and live heart rate over the session profile"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Opening.</b> A short kinetic splash while the workout loads.</td>
+    <td valign="top"><b>Check before you ride.</b> The session's shape, time in each zone, one row per block.</td>
+    <td valign="top"><b>Ride.</b> Only the numbers: countdown, watts, heart rate, cadence. The "now" line moves across the profile.</td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="docs/screenshots/ride-controls.png" alt="Ride screen after a tap: zone and set position at the top, the next block, and Exit, Back, Pause and Skip buttons"></td>
+    <td width="33%" align="center"><img src="docs/screenshots/end.png" alt="End-of-ride data card: the profile with the heart-rate trace, duration, TSS and min and max heart rate, with a Save to Photos button"></td>
+    <td width="33%" align="center"><img src="docs/screenshots/gym.png" alt="Gym day: Cycling Specific Weight Work with 20 sets, 8 exercises and the coach's notes as text"></td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Tap for more.</b> Zone, set position, what's next and the controls, gone again after 3 s.</td>
+    <td valign="top"><b>Share it.</b> A data card or story image with your heart-rate trace, saved to Photos.</td>
+    <td valign="top"><b>Gym days.</b> The coach's strength sessions as text, with sets and exercises.</td>
+  </tr>
+</table>
+
+Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
 
 ## Features
 
@@ -176,6 +209,7 @@ src/lib/              timer helpers, audio cues, heart rate, profile geometry, s
 src/components/animate-ui/  copied Animate UI primitives (lint-excluded)
 scripts/              parse, fetch and redact CLIs
 fixtures/             redacted sample emails used by tests and demo mode
+docs/screenshots/     README images, captured from demo mode at 402×874
 ```
 
 ## Design notes
