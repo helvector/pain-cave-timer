@@ -26,9 +26,9 @@ a heart-rate strap.
     <td width="33%" align="center"><img src="docs/screenshots/ride.png" alt="Ride screen: cadence target, countdown, target watts and live heart rate over the session profile"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Opening.</b> A short kinetic splash while the workout loads.</td>
-    <td valign="top"><b>Check before you ride.</b> The session's shape, time in each zone, one row per block.</td>
-    <td valign="top"><b>Ride.</b> Only the numbers: countdown, watts, heart rate, cadence. The "now" line moves across the profile.</td>
+    <td align="center"><b>Opening</b></td>
+    <td align="center"><b>Check the session</b></td>
+    <td align="center"><b>Ride</b></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="docs/screenshots/ride-controls.png" alt="Ride screen after a tap: zone and set position at the top, the next block, and Exit, Back, Pause and Skip buttons"></td>
@@ -36,9 +36,9 @@ a heart-rate strap.
     <td width="33%" align="center"><img src="docs/screenshots/gym.png" alt="Gym day: Cycling Specific Weight Work with 20 sets, 8 exercises and the coach's notes as text"></td>
   </tr>
   <tr>
-    <td valign="top"><b>Tap for more.</b> Zone, set position, what's next and the controls, gone again after 3 s.</td>
-    <td valign="top"><b>Share it.</b> A data card or story image with your heart-rate trace, saved to Photos.</td>
-    <td valign="top"><b>Gym days.</b> The coach's strength sessions as text, with sets and exercises.</td>
+    <td align="center"><b>Tap for controls</b></td>
+    <td align="center"><b>Share the ride</b></td>
+    <td align="center"><b>Gym days</b></td>
   </tr>
 </table>
 
