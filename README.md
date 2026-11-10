@@ -1,6 +1,12 @@
 # Pain Cave Timer
 
-A glanceable interval timer for coached indoor cycling.
+A glanceable interval timer for coached indoor cycling. Solving "the pain" of
+only having room for a shared Peloton bike, but a training schedule and plan
+delivered from TrainingPeaks via email. It parses the email and creates simple
+to use and read (without glasses) training rides, as a companion app to a
+Peloton ride.
+
+This app translates and transmits the planned ride; Peloton records the ride.
 
 ![The start screen with the session's shape, the ride screen mid-interval, and the end-of-ride data card](docs/screenshots/hero.png)
 
