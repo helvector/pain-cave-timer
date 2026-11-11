@@ -14,6 +14,16 @@ export const PLAYHEAD_LABELS: Record<PlayheadStyle, { name: string; blurb: strin
   stardust: { name: "Stardust", blurb: "Fine line shedding a slow drift of glittering dust." },
 };
 
+/** Countdown lengths offered on /admin: beeps on each of the last N seconds of every block (0 = off). */
+export const COUNTDOWN_OPTIONS = [0, 3, 5, 10] as const;
+export type CountdownSec = (typeof COUNTDOWN_OPTIONS)[number];
+
+export interface AudioSettings {
+  countdown: CountdownSec;
+  /** A chime and "One minute left" with a minute to go in every block longer than 90 s. */
+  lastMinute: boolean;
+}
+
 /** One zone as stored: its top in watts; its bottom is the previous top + 1 (first starts at 0). */
 export interface ZoneSetting {
   id: string;
@@ -28,6 +38,7 @@ export interface Settings {
   /** Resting and max heart rate: the chart's HR scale and the 0..1 intensity that drives the pulse and particles. */
   hrRest: number;
   hrMax: number;
+  audio: AudioSettings;
   /** FTP last used with "Calculate from FTP", for reference. */
   ftp?: number;
   updatedAt?: string;
@@ -46,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   playhead: "ember",
   hrRest: 80,
   hrMax: 196,
+  audio: { countdown: 3, lastMinute: false },
 };
 
 /** 0 at resting heart rate, 1 at max; clamped. */
@@ -106,5 +118,10 @@ export function validateSettings(input: unknown): { ok: true; settings: Settings
   const hrMax = raw.hrMax === undefined ? DEFAULT_SETTINGS.hrMax : Number(raw.hrMax);
   if (!Number.isInteger(hrRest) || hrRest < 30 || hrRest > 130) return { ok: false, error: "Resting heart rate must be 30–130 bpm" };
   if (!Number.isInteger(hrMax) || hrMax < 120 || hrMax > 230 || hrMax <= hrRest + 20) return { ok: false, error: "Max heart rate must be 120–230 bpm and well above resting" };
-  return { ok: true, settings: { zones, playhead, ftp, hrRest, hrMax } };
+  // Saved before audio settings existed: keep the old behaviour rather than reject (a rejection resets everything).
+  const a = (raw.audio ?? {}) as Record<string, unknown>;
+  const countdown = a.countdown === undefined ? DEFAULT_SETTINGS.audio.countdown : Number(a.countdown);
+  if (!COUNTDOWN_OPTIONS.includes(countdown as CountdownSec)) return { ok: false, error: `Countdown must be one of ${COUNTDOWN_OPTIONS.join(", ")} seconds` };
+  const audio: AudioSettings = { countdown: countdown as CountdownSec, lastMinute: a.lastMinute === true };
+  return { ok: true, settings: { zones, playhead, ftp, hrRest, hrMax, audio } };
 }

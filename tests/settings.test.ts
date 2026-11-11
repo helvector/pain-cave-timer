@@ -58,3 +58,27 @@ describe("settings", () => {
     expect(r.ok && r.settings.playhead).toBe("ember");
   });
 });
+
+describe("audio settings", () => {
+  // A settings.json saved before audio settings existed.
+  const saved: Partial<typeof DEFAULT_SETTINGS> = { ...DEFAULT_SETTINGS };
+  delete saved.audio;
+  it("keeps today's behaviour for settings saved before audio existed", () => {
+    const r = validateSettings(saved);
+    expect(r.ok && r.settings.audio).toEqual({ countdown: 3, lastMinute: false });
+  });
+  it("accepts every offered countdown and the last-minute toggle", () => {
+    for (const countdown of [0, 3, 5, 10]) {
+      const r = validateSettings({ ...saved, audio: { countdown, lastMinute: true } });
+      expect(r.ok && r.settings.audio).toEqual({ countdown, lastMinute: true });
+    }
+  });
+  it("rejects a countdown that isn't offered", () => {
+    const r = validateSettings({ ...saved, audio: { countdown: 7 } });
+    expect(r.ok).toBe(false);
+  });
+  it("treats anything but true as last minute off", () => {
+    const r = validateSettings({ ...saved, audio: { countdown: 3, lastMinute: "yes" } });
+    expect(r.ok && r.settings.audio.lastMinute).toBe(false);
+  });
+});

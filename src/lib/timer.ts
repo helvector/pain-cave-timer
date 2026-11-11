@@ -1,3 +1,4 @@
+import type { AudioSettings } from "./settings";
 import type { Block, Workout } from "./workout/types";
 
 export interface Position {
@@ -107,4 +108,19 @@ export function cadenceLabel(block: Block): string {
 /** True on the final interval of a repeat: the "last one" of the set. */
 export function isLastOfSet(block: Block): boolean {
   return block.kind === "work" && !!block.set && block.set.count > 1 && block.set.index === block.set.count;
+}
+
+/** Blocks this long or shorter get no last-minute cue: it would land on or near the block's own start. */
+export const LAST_MINUTE_MIN_BLOCK_SEC = 90;
+
+/**
+ * Which timed audio cue is due at this whole second of a block, if any:
+ * a countdown tick on each of the last `audio.countdown` seconds, or the
+ * last-minute cue at 60 s left. The ride screen keys these per block so
+ * each fires once.
+ */
+export function timedCue(remainingSec: number, durationSec: number, audio: AudioSettings): "tick" | "lastMinute" | undefined {
+  if (remainingSec >= 1 && remainingSec <= audio.countdown) return "tick";
+  if (audio.lastMinute && remainingSec === 60 && durationSec > LAST_MINUTE_MIN_BLOCK_SEC) return "lastMinute";
+  return undefined;
 }

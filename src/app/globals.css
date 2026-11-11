@@ -441,6 +441,13 @@ p { margin: 0; line-height: 1.4; }
 .admin__slider { display: flex; flex-direction: column; gap: 8px; }
 .admin__slider input[type="range"] { width: 100%; accent-color: #ff2b2b; padding: 0; border: 0; background: none; }
 .admin__bpm { color: #ff2b2b; }
+.admin__cue { display: flex; flex-direction: column; gap: 10px; }
+.admin__cue + .admin__cue { margin-top: 18px; }
+.admin__cue p { margin: 4px 0 0; }
+.seg { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.seg button { padding: 10px 16px; min-width: 3.4em; }
+.seg button[aria-checked="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+.admin__hear { padding: 10px 18px; }
 
 /* Hidden-controls hint: a faint line where the dock sits, gone after the first tap. */
 .controls-hint {

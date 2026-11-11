@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
-import { clock, coachCues, isLastOfSet, positionAt, positionLabel, wattsLabel, zoneLabel } from "@/lib/timer";
+import { clock, coachCues, isLastOfSet, positionAt, positionLabel, timedCue, wattsLabel, zoneLabel } from "@/lib/timer";
 import { SlidingNumber } from "@/components/animate-ui/primitives/texts/sliding-number";
 import { CountingNumber } from "@/components/animate-ui/primitives/texts/counting-number";
 import { Blur } from "@/components/animate-ui/primitives/effects/blur";
@@ -47,7 +47,8 @@ interface Props {
 /**
  * The riding screen. Time is wall-clock based: elapsed = now − startedAt − paused,
  * so a throttled tab or a slow tick never drifts the schedule. Cues fire when
- * the block index changes; 3-2-1 ticks lead into every transition.
+ * the block index changes; countdown ticks (3 s by default, set on /admin)
+ * lead into every transition, plus an optional last-minute cue.
  */
 export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, seedHr }: Props) {
   const { settings } = useSettings();
@@ -126,14 +127,15 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
       lastIndex.current = pos.index;
       cues.play(pos.block.cue);
     }
-    if (pos.remainingSec <= 3 && pos.remainingSec >= 1) {
+    const timed = timedCue(pos.remainingSec, pos.block.durationSec, settings.audio);
+    if (timed) {
       const key = `${pos.index}:${pos.remainingSec}`;
       if (lastTick.current !== key) {
         lastTick.current = key;
-        cues.play("tick");
+        cues.play(timed);
       }
     }
-  }, [pos.finished, pos.index, pos.remainingSec, pos.block.cue, cues, onDone, workout.totalSec]);
+  }, [pos.finished, pos.index, pos.remainingSec, pos.block.cue, pos.block.durationSec, settings.audio, cues, onDone, workout.totalSec]);
 
   /** Ending early still gets a summary of what was ridden, unless it was barely started. */
   const exit = useCallback(() => {

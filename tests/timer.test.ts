@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { clock, positionAt, wattsLabel, zoneLabel } from "../src/lib/timer";
+import { clock, positionAt, timedCue, wattsLabel, zoneLabel } from "../src/lib/timer";
 
 const html = readFileSync("fixtures/trainingpeaks-sweet-spot-3x15.html", "utf8");
 const w = parseTrainingPeaksEmail(html, { subject: "Schedule for Thursday 09/10/2026 to Friday 09/11/2026" }).days[0];
@@ -43,5 +43,27 @@ describe("labels", () => {
     expect(wattsLabel(w.blocks[1])).toBe("220–235");
     expect(zoneLabel(w.blocks[1])).toBe("Tempo · Threshold");
     expect(zoneLabel({ ...w.blocks[0], target: { raw: "" } })).toBe("Warm up");
+  });
+});
+
+describe("timedCue", () => {
+  const on = { countdown: 5 as const, lastMinute: true };
+  it("ticks on each of the last N seconds", () => {
+    expect([6, 5, 4, 3, 2, 1, 0].map((r) => timedCue(r, 240, on))).toEqual([undefined, "tick", "tick", "tick", "tick", "tick", undefined]);
+    expect(timedCue(3, 240, { countdown: 3, lastMinute: false })).toBe("tick");
+    expect(timedCue(4, 240, { countdown: 3, lastMinute: false })).toBeUndefined();
+  });
+  it("is silent with the countdown off", () => {
+    expect([3, 2, 1].map((r) => timedCue(r, 240, { countdown: 0, lastMinute: false }))).toEqual([undefined, undefined, undefined]);
+  });
+  it("calls the last minute at 60 s left, only when on", () => {
+    expect(timedCue(60, 240, on)).toBe("lastMinute");
+    expect(timedCue(59, 240, on)).toBeUndefined();
+    expect(timedCue(60, 240, { ...on, lastMinute: false })).toBeUndefined();
+  });
+  it("skips the last minute in blocks of 90 s or less", () => {
+    expect(timedCue(60, 90, on)).toBeUndefined();
+    expect(timedCue(60, 60, on)).toBeUndefined();
+    expect(timedCue(60, 91, on)).toBe("lastMinute");
   });
 });

@@ -51,7 +51,11 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   is the confirmation screen), `Ride`, `Summary` (end-of-ride image),
   `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin), `Splash`
   (opening animation, "Stamp", once per page load).
-- `src/lib/settings.ts` zones, playhead style, hrRest/hrMax defaults;
+- `src/lib/settings.ts` zones, playhead style, hrRest/hrMax, audio (countdown
+  0/3/5/10 s, last-minute toggle; missing fields default, never reject, or a
+  saved settings.json resets) defaults; `timer.ts` `timedCue` decides when
+  ticks and the last-minute cue fire; `audio.ts` synthesises every sound (the
+  last-minute words use Web Speech, untested in Bluefy);
   `power-zones.ts` the rider's watt zones; `summary-card.ts` canvas share image;
   `playhead-fx.ts` the "now" line.
 - `src/components/animate-ui/` is copied Animate UI source: lint-excluded,

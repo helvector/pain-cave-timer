@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Workout } from "@/lib/workout/types";
+import { Cues } from "@/lib/audio";
 import {
-  DEFAULT_SETTINGS, hrIntensity, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
-  type PlayheadStyle, type Settings,
+  COUNTDOWN_OPTIONS, DEFAULT_SETTINGS, hrIntensity, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
+  type AudioSettings, type PlayheadStyle, type Settings,
 } from "@/lib/settings";
 import { useSettings } from "./SettingsProvider";
 import { WorkoutProfile } from "./WorkoutProfile";
@@ -13,7 +14,7 @@ import { WorkoutProfile } from "./WorkoutProfile";
 const TOKEN_KEY = "pct.token";
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; } };
 
-/** /admin: edit power zones (coach's table), zone colours, and the "now" line style. */
+/** /admin: edit power zones (coach's table), zone colours, heart rate, audio cues and the "now" line style. */
 export function Admin() {
   const { settings } = useSettings();
   // Remount the editor when the server copy arrives so the draft starts from it.
@@ -50,7 +51,17 @@ function Editor({ initial }: { initial: Settings }) {
   const elapsed = sample ? (clock * 60) % sample.totalSec : 0;
   const current = sample?.blocks.findIndex((b) => elapsed >= b.startSec && elapsed < b.startSec + b.durationSec) ?? -1;
   const intensity = hrIntensity(previewBpm, draft.hrRest, draft.hrMax);
-  const pick = (d: Settings) => ({ z: d.zones, p: d.playhead, r: d.hrRest, m: d.hrMax });
+  const pick = (d: Settings) => ({ z: d.zones, p: d.playhead, r: d.hrRest, m: d.hrMax, a: d.audio });
+  const setAudio = (patch: Partial<AudioSettings>) => setDraft((d) => ({ ...d, audio: { ...d.audio, ...patch } }));
+  const cues = useMemo(() => new Cues(), []);
+  /** Hear a cue. The tap unlocks audio, as the Start tap does on the ride screen. */
+  const hear = async (what: "countdown" | "lastMinute") => {
+    await cues.unlock();
+    if (what === "lastMinute") { cues.play("lastMinute"); return; }
+    const n = draft.audio.countdown;
+    for (let i = 0; i < n; i++) setTimeout(() => cues.play("tick"), i * 1000);
+    setTimeout(() => cues.play("work"), n * 1000);
+  };
   const dirty = JSON.stringify(pick(draft)) !== JSON.stringify(pick(initial));
 
   const setZone = (i: number, patch: Partial<Settings["zones"][number]>) =>
@@ -169,6 +180,42 @@ function Editor({ initial }: { initial: Settings }) {
         </section>
 
         <section className="admin__section">
+          <h2>Audio cues</h2>
+          <div className="admin__cue">
+            <div>
+              <span className="small">Countdown</span>
+              <p className="muted small">A beep on each of the last seconds of every block, before the change sound.</p>
+            </div>
+            <div className="row">
+              <div className="seg" role="radiogroup" aria-label="Countdown length">
+                {COUNTDOWN_OPTIONS.map((n) => (
+                  <button key={n} role="radio" aria-checked={draft.audio.countdown === n} onClick={() => setAudio({ countdown: n })}>
+                    {n === 0 ? "Off" : `${n} s`}
+                  </button>
+                ))}
+              </div>
+              <button className="admin__hear" onClick={() => void hear("countdown")} disabled={draft.audio.countdown === 0}>Play</button>
+            </div>
+          </div>
+          <div className="admin__cue">
+            <div>
+              <span className="small">Last minute</span>
+              <p className="muted small">Two chimes and &ldquo;One minute left&rdquo; with a minute to go, in every block longer than 90 seconds.</p>
+            </div>
+            <div className="row">
+              <div className="seg" role="radiogroup" aria-label="Last minute cue">
+                {[false, true].map((on) => (
+                  <button key={String(on)} role="radio" aria-checked={draft.audio.lastMinute === on} onClick={() => setAudio({ lastMinute: on })}>
+                    {on ? "On" : "Off"}
+                  </button>
+                ))}
+              </div>
+              <button className="admin__hear" onClick={() => void hear("lastMinute")}>Play</button>
+            </div>
+          </div>
+        </section>
+
+        <section className="admin__section">
           <h2>Preview</h2>
           <div className="admin__preview">{preview(draft.playhead, "profile--admin-main")}</div>
         </section>
@@ -198,7 +245,7 @@ function Editor({ initial }: { initial: Settings }) {
           </label>
           <div className="row">
             <button className="primary" onClick={save} disabled={status?.kind === "busy"}>Save</button>
-            <button onClick={() => { setDraft(DEFAULT_SETTINGS); setFtp(""); setStatus({ kind: "ok", text: "Reset to your coach's Oct 2026 zones. Save to keep." }); }}>Reset to coach&apos;s zones</button>
+            <button onClick={() => { setDraft((d) => ({ ...DEFAULT_SETTINGS, audio: d.audio })); setFtp(""); setStatus({ kind: "ok", text: "Reset to your coach's Oct 2026 zones. Save to keep." }); }}>Reset to coach&apos;s zones</button>
             {dirty && <span className="muted small">Unsaved changes</span>}
           </div>
           {!check.ok && <p className="notice">{check.error}</p>}
