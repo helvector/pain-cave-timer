@@ -130,7 +130,9 @@ export function ConfirmHero(p: Parts) {
         </div>
         {w.blocks.length > 0 && w.strength?.length ? <Gym sessions={w.strength} showTitle /> : null}
         <nav className="cv__links">
-          <a className="cv__link" href="/admin">Admin</a>
+          <a className="cv__link cv__link--icon" href="/admin">
+            <MetricIcon metric="settings" className="cv__link-icon" />Settings
+          </a>
           {/* Demo runs on the redacted sample sessions, no mailbox or token. Plain links on purpose:
               App reads ?demo once on load, so switching needs a full page load, not a client route. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}

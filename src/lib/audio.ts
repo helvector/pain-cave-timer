@@ -22,7 +22,7 @@ export class Cues {
     } catch { /* no speech synthesis */ }
   }
 
-  play(cue: Cue | "finish" | "tick" | "lastMinute"): void {
+  play(cue: Cue | "finish" | "tick" | "lastMinute" | "thirty" | "fifteen"): void {
     switch (cue) {
       case "start":
         this.beeps([[880, 0.12], [880, 0.12], [880, 0.12]], 0.2);
@@ -43,6 +43,12 @@ export class Cues {
         // Two soft high notes, then the words, so it can't be mistaken for a block change.
         this.beeps([[1320, 0.1], [1320, 0.1]], 0.08, 0.6);
         this.say("One minute left", 0.45);
+        break;
+      case "thirty":
+      case "fifteen":
+        // One soft high note, then the words: lighter than the last-minute call.
+        this.beeps([[1320, 0.1]], 0, 0.6);
+        this.say(cue === "thirty" ? "Thirty seconds" : "Fifteen seconds", 0.3);
         break;
     }
   }

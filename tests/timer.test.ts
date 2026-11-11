@@ -47,14 +47,14 @@ describe("labels", () => {
 });
 
 describe("timedCue", () => {
-  const on = { countdown: 5 as const, lastMinute: true };
+  const on = { countdown: 5 as const, lastMinute: true, secondCall: 0 as const };
   it("ticks on each of the last N seconds", () => {
     expect([6, 5, 4, 3, 2, 1, 0].map((r) => timedCue(r, 240, on))).toEqual([undefined, "tick", "tick", "tick", "tick", "tick", undefined]);
-    expect(timedCue(3, 240, { countdown: 3, lastMinute: false })).toBe("tick");
-    expect(timedCue(4, 240, { countdown: 3, lastMinute: false })).toBeUndefined();
+    expect(timedCue(3, 240, { countdown: 3, lastMinute: false, secondCall: 0 })).toBe("tick");
+    expect(timedCue(4, 240, { countdown: 3, lastMinute: false, secondCall: 0 })).toBeUndefined();
   });
   it("is silent with the countdown off", () => {
-    expect([3, 2, 1].map((r) => timedCue(r, 240, { countdown: 0, lastMinute: false }))).toEqual([undefined, undefined, undefined]);
+    expect([3, 2, 1].map((r) => timedCue(r, 240, { countdown: 0, lastMinute: false, secondCall: 0 }))).toEqual([undefined, undefined, undefined]);
   });
   it("calls the last minute at 60 s left, only when on", () => {
     expect(timedCue(60, 240, on)).toBe("lastMinute");
@@ -65,5 +65,14 @@ describe("timedCue", () => {
     expect(timedCue(60, 90, on)).toBeUndefined();
     expect(timedCue(60, 60, on)).toBeUndefined();
     expect(timedCue(60, 91, on)).toBe("lastMinute");
+  });
+  it("makes the second call at 30 or 15 s left, in blocks at least twice that long", () => {
+    expect(timedCue(30, 240, { ...on, secondCall: 30 })).toBe("thirty");
+    expect(timedCue(15, 240, { ...on, secondCall: 15 })).toBe("fifteen");
+    expect(timedCue(30, 240, { ...on, secondCall: 15 })).toBeUndefined();
+    expect(timedCue(30, 59, { ...on, secondCall: 30 })).toBeUndefined();
+    expect(timedCue(30, 60, { ...on, secondCall: 30 })).toBe("thirty");
+    expect(timedCue(15, 30, { ...on, secondCall: 15 })).toBe("fifteen");
+    expect(timedCue(60, 240, { ...on, secondCall: 30 })).toBe("lastMinute");
   });
 });

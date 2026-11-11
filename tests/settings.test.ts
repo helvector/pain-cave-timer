@@ -65,17 +65,17 @@ describe("audio settings", () => {
   delete saved.audio;
   it("keeps today's behaviour for settings saved before audio existed", () => {
     const r = validateSettings(saved);
-    expect(r.ok && r.settings.audio).toEqual({ countdown: 3, lastMinute: false });
+    expect(r.ok && r.settings.audio).toEqual({ countdown: 3, lastMinute: false, secondCall: 0 });
   });
   it("accepts every offered countdown and the last-minute toggle", () => {
     for (const countdown of [0, 3, 5, 10]) {
-      const r = validateSettings({ ...saved, audio: { countdown, lastMinute: true } });
-      expect(r.ok && r.settings.audio).toEqual({ countdown, lastMinute: true });
+      const r = validateSettings({ ...saved, audio: { countdown, lastMinute: true, secondCall: 15 } });
+      expect(r.ok && r.settings.audio).toEqual({ countdown, lastMinute: true, secondCall: 15 });
     }
   });
-  it("rejects a countdown that isn't offered", () => {
-    const r = validateSettings({ ...saved, audio: { countdown: 7 } });
-    expect(r.ok).toBe(false);
+  it("rejects a countdown or second call that isn't offered", () => {
+    expect(validateSettings({ ...saved, audio: { countdown: 7 } }).ok).toBe(false);
+    expect(validateSettings({ ...saved, audio: { countdown: 3, secondCall: 20 } }).ok).toBe(false);
   });
   it("treats anything but true as last minute off", () => {
     const r = validateSettings({ ...saved, audio: { countdown: 3, lastMinute: "yes" } });

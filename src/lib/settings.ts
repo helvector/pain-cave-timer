@@ -18,10 +18,16 @@ export const PLAYHEAD_LABELS: Record<PlayheadStyle, { name: string; blurb: strin
 export const COUNTDOWN_OPTIONS = [0, 3, 5, 10] as const;
 export type CountdownSec = (typeof COUNTDOWN_OPTIONS)[number];
 
+/** Second time call offered on /admin: a chime and "Thirty/Fifteen seconds" that long before the end of a block (0 = off). */
+export const SECOND_CALL_OPTIONS = [0, 30, 15] as const;
+export type SecondCallSec = (typeof SECOND_CALL_OPTIONS)[number];
+
 export interface AudioSettings {
   countdown: CountdownSec;
   /** A chime and "One minute left" with a minute to go in every block longer than 90 s. */
   lastMinute: boolean;
+  /** A chime and "Thirty seconds" / "Fifteen seconds", in blocks at least twice that long. */
+  secondCall: SecondCallSec;
 }
 
 /** One zone as stored: its top in watts; its bottom is the previous top + 1 (first starts at 0). */
@@ -57,7 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   playhead: "ember",
   hrRest: 80,
   hrMax: 196,
-  audio: { countdown: 3, lastMinute: false },
+  audio: { countdown: 3, lastMinute: false, secondCall: 0 },
 };
 
 /** 0 at resting heart rate, 1 at max; clamped. */
@@ -122,6 +128,8 @@ export function validateSettings(input: unknown): { ok: true; settings: Settings
   const a = (raw.audio ?? {}) as Record<string, unknown>;
   const countdown = a.countdown === undefined ? DEFAULT_SETTINGS.audio.countdown : Number(a.countdown);
   if (!COUNTDOWN_OPTIONS.includes(countdown as CountdownSec)) return { ok: false, error: `Countdown must be one of ${COUNTDOWN_OPTIONS.join(", ")} seconds` };
-  const audio: AudioSettings = { countdown: countdown as CountdownSec, lastMinute: a.lastMinute === true };
+  const secondCall = a.secondCall === undefined ? DEFAULT_SETTINGS.audio.secondCall : Number(a.secondCall);
+  if (!SECOND_CALL_OPTIONS.includes(secondCall as SecondCallSec)) return { ok: false, error: `Second call must be one of ${SECOND_CALL_OPTIONS.join(", ")} seconds` };
+  const audio: AudioSettings = { countdown: countdown as CountdownSec, lastMinute: a.lastMinute === true, secondCall: secondCall as SecondCallSec };
   return { ok: true, settings: { zones, playhead, ftp, hrRest, hrMax, audio } };
 }

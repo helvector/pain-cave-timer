@@ -61,8 +61,8 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
 - **Ride screen.** Countdown, target watts, zone, set position ("2 of 3"), the
   coach's cadence / RPE / heart-rate cues, and a profile chart with a "now"
   line. Blocks auto-advance with distinct start, work, recovery and countdown
-  cues; an optional "One minute left" call comes a minute before the end of
-  every block longer than 90 s.
+  cues; optional spoken calls come at one minute left (blocks over 90 s) and
+  at 30 or 15 s left (blocks at least twice that long).
 - **Only the numbers until you tap.** Time, watts, heart rate and cadence stay
   on screen; the first tap brings up the controls, the zone and set position,
   and what's next, and they all sink away after 3 s. No accidental pauses.
@@ -77,10 +77,11 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
   isn't in the email, only in the TrainingPeaks app.
 - **Yesterday too.** The start screen has a tab for yesterday's session next
   to today and tomorrow, and Admin and Demo buttons at the bottom.
-- **Your zones, your colours, your cues.** Edit power zones, colours,
-  resting/max heart rate, the countdown length (off, 3, 5 or 10 s), the
-  last-minute call and the "now" line style at `/admin`, with a Play button to
-  hear each cue.
+- **Your zones, your colours, your cues.** The Settings page (`/admin`, the
+  Settings button on the start screen) has numbered sections and a sticky tab
+  bar: power zones, colours, resting/max heart rate, the countdown length
+  (off, 3, 5 or 10 s), the last-minute and 30/15 s calls, and the "now" line
+  style, with a Play button to hear each cue.
 
 ## Try it without a mailbox
 

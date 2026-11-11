@@ -115,12 +115,14 @@ export const LAST_MINUTE_MIN_BLOCK_SEC = 90;
 
 /**
  * Which timed audio cue is due at this whole second of a block, if any:
- * a countdown tick on each of the last `audio.countdown` seconds, or the
- * last-minute cue at 60 s left. The ride screen keys these per block so
+ * a countdown tick on each of the last `audio.countdown` seconds, the
+ * last-minute cue at 60 s left, or the second call at 30 or 15 s left. The ride screen keys these per block so
  * each fires once.
  */
-export function timedCue(remainingSec: number, durationSec: number, audio: AudioSettings): "tick" | "lastMinute" | undefined {
+export function timedCue(remainingSec: number, durationSec: number, audio: AudioSettings): "tick" | "lastMinute" | "thirty" | "fifteen" | undefined {
   if (remainingSec >= 1 && remainingSec <= audio.countdown) return "tick";
   if (audio.lastMinute && remainingSec === 60 && durationSec > LAST_MINUTE_MIN_BLOCK_SEC) return "lastMinute";
+  // The second call only in blocks at least twice its length, so it never comes in the first half.
+  if (audio.secondCall && remainingSec === audio.secondCall && durationSec >= audio.secondCall * 2) return audio.secondCall === 30 ? "thirty" : "fifteen";
   return undefined;
 }

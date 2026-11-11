@@ -5,10 +5,11 @@ import Link from "next/link";
 import type { Workout } from "@/lib/workout/types";
 import { Cues } from "@/lib/audio";
 import {
-  COUNTDOWN_OPTIONS, DEFAULT_SETTINGS, hrIntensity, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
+  COUNTDOWN_OPTIONS, DEFAULT_SETTINGS, hrIntensity, SECOND_CALL_OPTIONS, PLAYHEAD_LABELS, PLAYHEAD_STYLES, resolveZones, validateSettings, zoneTopsFromFtp, ZONE_TOP_PCTS,
   type AudioSettings, type PlayheadStyle, type Settings,
 } from "@/lib/settings";
 import { useSettings } from "./SettingsProvider";
+import { MetricIcon } from "./MetricIcon";
 import { WorkoutProfile } from "./WorkoutProfile";
 
 const TOKEN_KEY = "pct.token";
@@ -19,6 +20,55 @@ export function Admin() {
   const { settings } = useSettings();
   // Remount the editor when the server copy arrives so the draft starts from it.
   return <Editor key={settings.updatedAt ?? "local"} initial={settings} />;
+}
+
+/** Sections, numbered to match the sticky sub nav. */
+const SECTIONS = [
+  { id: "zones", nav: "Zones", title: "Power zones" },
+  { id: "heart", nav: "Heart rate", title: "Heart rate" },
+  { id: "audio", nav: "Audio", title: "Audio cues" },
+  { id: "preview", nav: "Preview", title: "Preview" },
+  { id: "line", nav: "Now line", title: "\u201cNow\u201d line" },
+  { id: "save", nav: "Save", title: "Save" },
+] as const;
+type SectionId = (typeof SECTIONS)[number]["id"];
+const num = (i: number) => String(i + 1).padStart(2, "0");
+
+/** The section whose heading was last scrolled past the top. */
+function useActiveSection(): SectionId {
+  const [active, setActive] = useState<SectionId>("zones");
+  useEffect(() => {
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => !!e);
+    const pick = () => {
+      const line = 140;
+      let current: SectionId = SECTIONS[0].id;
+      for (const el of els) if (el.getBoundingClientRect().top <= line) current = el.id as SectionId;
+      // At the very bottom the last section can't reach the line; count it as current.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = els[els.length - 1].id as SectionId;
+      setActive(current);
+    };
+    const io = new IntersectionObserver(pick, { rootMargin: "0px 0px -60% 0px", threshold: [0, 1] });
+    els.forEach((e) => io.observe(e));
+    window.addEventListener("scroll", pick, { passive: true });
+    return () => { io.disconnect(); window.removeEventListener("scroll", pick); };
+  }, []);
+  return active;
+}
+
+/** Sticky, sideways-scrolling numbered tabs; the current section is underlined. */
+function SubNav({ active }: { active: SectionId }) {
+  return (
+    <nav className="snav" aria-label="Settings sections">
+      <div className="snav__track">
+        {SECTIONS.map((s, i) => (
+          <a key={s.id} href={`#${s.id}`} aria-current={active === s.id ? "location" : undefined}>
+            <span className="snav__n">{num(i)}</span>
+            {s.nav}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
 }
 
 function Editor({ initial }: { initial: Settings }) {
@@ -55,9 +105,10 @@ function Editor({ initial }: { initial: Settings }) {
   const setAudio = (patch: Partial<AudioSettings>) => setDraft((d) => ({ ...d, audio: { ...d.audio, ...patch } }));
   const cues = useMemo(() => new Cues(), []);
   /** Hear a cue. The tap unlocks audio, as the Start tap does on the ride screen. */
-  const hear = async (what: "countdown" | "lastMinute") => {
+  const hear = async (what: "countdown" | "lastMinute" | "secondCall") => {
     await cues.unlock();
     if (what === "lastMinute") { cues.play("lastMinute"); return; }
+    if (what === "secondCall") { cues.play(draft.audio.secondCall === 15 ? "fifteen" : "thirty"); return; }
     const n = draft.audio.countdown;
     for (let i = 0; i < n; i++) setTimeout(() => cues.play("tick"), i * 1000);
     setTimeout(() => cues.play("work"), n * 1000);
@@ -102,16 +153,23 @@ function Editor({ initial }: { initial: Settings }) {
       <div className={`profile ${className} admin__loading`}>Loading sample…</div>
     );
 
+  const active = useActiveSection();
+  const heading = (id: SectionId) => {
+    const i = SECTIONS.findIndex((x) => x.id === id);
+    return <h2><span className="admin__n">{num(i)}</span>{SECTIONS[i].title}</h2>;
+  };
+
   return (
     <main className="screen admin">
       <div className="stack admin__wrap">
         <header className="admin__header">
-          <h1>Settings</h1>
+          <h1><MetricIcon metric="settings" size="large" className="admin__icon" />Settings</h1>
           <Link href="/" className="muted">← Back to today</Link>
         </header>
+        <SubNav active={active} />
 
-        <section className="admin__section">
-          <h2>Power zones</h2>
+        <section className="admin__section" id="zones">
+          {heading("zones")}
           <p className="muted small">
             Same table as your coach sends. Each zone starts one watt above the one before. Tap a swatch to change its colour.
           </p>
@@ -141,7 +199,7 @@ function Editor({ initial }: { initial: Settings }) {
 
           <div className="admin__ftp">
             <label>
-              <span className="muted small">Calculate from FTP</span>
+              <span className="admin__sub">Calculate from FTP</span>
               <span className="row">
                 <input type="number" inputMode="numeric" placeholder="e.g. 262" value={ftp} onChange={(e) => setFtp(e.target.value)} aria-label="FTP in watts" />
                 <button onClick={calculate}>Calculate zones</button>
@@ -154,36 +212,36 @@ function Editor({ initial }: { initial: Settings }) {
           </div>
         </section>
 
-        <section className="admin__section">
-          <h2>Heart rate</h2>
+        <section className="admin__section" id="heart">
+          {heading("heart")}
           <p className="muted small">
             Resting to max sets the heart-rate scale on the chart and how hard the current block pulses and the line sparks.
           </p>
           <div className="row admin__hr">
             <label>
-              <span className="muted small">Resting</span>
+              <span className="admin__sub">Resting</span>
               <input type="number" inputMode="numeric" value={draft.hrRest} onChange={(e) => setDraft((d) => ({ ...d, hrRest: Number(e.target.value) }))} aria-label="Resting heart rate, bpm" />
             </label>
             <label>
-              <span className="muted small">Max</span>
+              <span className="admin__sub">Max</span>
               <input type="number" inputMode="numeric" value={draft.hrMax} onChange={(e) => setDraft((d) => ({ ...d, hrMax: Number(e.target.value) }))} aria-label="Max heart rate, bpm" />
             </label>
             <span className="muted">bpm</span>
           </div>
           <label className="admin__slider">
-            <span className="small">
+            <span className="admin__sub">
               Preview heart rate <b className="admin__bpm">{previewBpm} bpm</b>
-              <span className="muted"> · intensity {Math.round(intensity * 100)}%</span>
+              <span className="muted small"> · intensity {Math.round(intensity * 100)}%</span>
             </span>
             <input type="range" min={Math.max(40, draft.hrRest - 10)} max={draft.hrMax + 5} value={previewBpm} onChange={(e) => setPreviewBpm(Number(e.target.value))} />
           </label>
         </section>
 
-        <section className="admin__section">
-          <h2>Audio cues</h2>
+        <section className="admin__section" id="audio">
+          {heading("audio")}
           <div className="admin__cue">
             <div>
-              <span className="small">Countdown</span>
+              <span className="admin__sub">Countdown</span>
               <p className="muted small">A beep on each of the last seconds of every block, before the change sound.</p>
             </div>
             <div className="row">
@@ -199,7 +257,7 @@ function Editor({ initial }: { initial: Settings }) {
           </div>
           <div className="admin__cue">
             <div>
-              <span className="small">Last minute</span>
+              <span className="admin__sub">Last minute</span>
               <p className="muted small">Two chimes and &ldquo;One minute left&rdquo; with a minute to go, in every block longer than 90 seconds.</p>
             </div>
             <div className="row">
@@ -213,15 +271,31 @@ function Editor({ initial }: { initial: Settings }) {
               <button className="admin__hear" onClick={() => void hear("lastMinute")}>Play</button>
             </div>
           </div>
+          <div className="admin__cue">
+            <div>
+              <span className="admin__sub">Second call</span>
+              <p className="muted small">A chime and &ldquo;Thirty seconds&rdquo; or &ldquo;Fifteen seconds&rdquo; before the end, in blocks at least twice that long.</p>
+            </div>
+            <div className="row">
+              <div className="seg" role="radiogroup" aria-label="Second call">
+                {SECOND_CALL_OPTIONS.map((n) => (
+                  <button key={n} role="radio" aria-checked={draft.audio.secondCall === n} onClick={() => setAudio({ secondCall: n })}>
+                    {n === 0 ? "Off" : `${n} s`}
+                  </button>
+                ))}
+              </div>
+              <button className="admin__hear" onClick={() => void hear("secondCall")} disabled={draft.audio.secondCall === 0}>Play</button>
+            </div>
+          </div>
         </section>
 
-        <section className="admin__section">
-          <h2>Preview</h2>
+        <section className="admin__section" id="preview">
+          {heading("preview")}
           <div className="admin__preview">{preview(draft.playhead, "profile--admin-main")}</div>
         </section>
 
-        <section className="admin__section">
-          <h2>&ldquo;Now&rdquo; line</h2>
+        <section className="admin__section" id="line">
+          {heading("line")}
           <p className="muted small">The current block pulses; this line marks where you are. Pick one.</p>
           <div className="fx-grid" role="radiogroup" aria-label="Now line style">
             {PLAYHEAD_STYLES.map((s) => (
@@ -238,9 +312,11 @@ function Editor({ initial }: { initial: Settings }) {
           </div>
         </section>
 
-        <section className="admin__section admin__save">
+        <section className="admin__section admin__save" id="save">
+          {heading("save")}
           <label className="admin__token">
-            <span className="muted small">Access token (needed to save)</span>
+            <span className="admin__sub">Access token</span>
+            <span className="muted small">Needed to save. Kept on this device.</span>
             <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="token" />
           </label>
           <div className="row">

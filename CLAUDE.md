@@ -49,11 +49,12 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   production, so previews and local dev can't exercise the live mail path.
 - `src/components/`: `App` (phases), `Confirm` + `ConfirmVariants` (`ConfirmHero`
   is the confirmation screen), `Ride`, `Summary` (end-of-ride image),
-  `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin), `Splash`
+  `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin, titled
+  Settings: numbered sections, sticky numbered tab bar, faders icon), `Splash`
   (opening animation, "Stamp", once per page load).
 - `src/lib/settings.ts` zones, playhead style, hrRest/hrMax, audio (countdown
-  0/3/5/10 s, last-minute toggle; missing fields default, never reject, or a
-  saved settings.json resets) defaults; `timer.ts` `timedCue` decides when
+  0/3/5/10 s, last-minute toggle, second call 0/30/15 s; missing fields
+  default, never reject, or a saved settings.json resets) defaults; `timer.ts` `timedCue` decides when
   ticks and the last-minute cue fire; `audio.ts` synthesises every sound (the
   last-minute words use Web Speech, untested in Bluefy);
   `power-zones.ts` the rider's watt zones; `summary-card.ts` canvas share image;
