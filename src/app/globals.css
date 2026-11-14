@@ -405,6 +405,10 @@ p { margin: 0; line-height: 1.4; }
   font-size: 1.15rem;
 }
 .ride-bottom .controls button:disabled { color: rgba(255, 255, 255, 0.45); opacity: 1; }
+/* Sound on/off: an icon, so the four labelled buttons keep their width. */
+.ride-bottom .controls .controls__sound { flex: 0 0 52px; padding: 0; display: grid; place-items: center; }
+.controls__sound .metric-icon { --icon-size: 1.45em; }
+.ride-bottom .controls .controls__sound[aria-pressed="true"] { background: #fff; color: #000; border-color: #fff; }
 .profile--preview { height: clamp(64px, 14vh, 120px); margin: 4px 0 2px; }
 .profile rect { transition: fill-opacity 300ms ease; }
 

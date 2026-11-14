@@ -15,7 +15,7 @@ export const PLAYHEAD_LABELS: Record<PlayheadStyle, { name: string; blurb: strin
 };
 
 /** Countdown lengths offered on /admin: beeps on each of the last N seconds of every block (0 = off). */
-export const COUNTDOWN_OPTIONS = [0, 3, 5, 10] as const;
+export const COUNTDOWN_OPTIONS = [0, 3, 4, 5, 10] as const;
 export type CountdownSec = (typeof COUNTDOWN_OPTIONS)[number];
 
 /** Second time call offered on /admin: a chime and "Thirty/Fifteen seconds" that long before the end of a block (0 = off). */
@@ -63,7 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   playhead: "ember",
   hrRest: 80,
   hrMax: 196,
-  audio: { countdown: 3, lastMinute: false, secondCall: 0 },
+  audio: { countdown: 4, lastMinute: false, secondCall: 0 },
 };
 
 /** 0 at resting heart rate, 1 at max; clamped. */

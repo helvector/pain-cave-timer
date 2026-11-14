@@ -8,6 +8,13 @@ import type { Cue } from "./workout/types";
  */
 export class Cues {
   private ctx?: AudioContext;
+  /** Silences every cue (the ride screen's sound toggle) without touching the schedule. */
+  private muted = false;
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    if (muted) try { window.speechSynthesis?.cancel(); } catch { /* no speech synthesis */ }
+  }
 
   /** Must be called from a user gesture (the Start tap) to unlock audio. */
   async unlock(): Promise<void> {
@@ -23,6 +30,7 @@ export class Cues {
   }
 
   play(cue: Cue | "finish" | "tick" | "lastMinute" | "thirty" | "fifteen"): void {
+    if (this.muted) return;
     switch (cue) {
       case "start":
         this.beeps([[880, 0.12], [880, 0.12], [880, 0.12]], 0.2);
@@ -57,6 +65,7 @@ export class Cues {
   private say(text: string, delaySec: number): void {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     setTimeout(() => {
+      if (this.muted) return;
       try {
         const u = new SpeechSynthesisUtterance(text);
         u.rate = 1.05;

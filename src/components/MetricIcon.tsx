@@ -9,18 +9,19 @@
  * on the cap-height centre of the type beside it (see `.metric-icon` in
  * globals.css): exact vertical centring, and spacing measured from the ink.
  *
- * Settings is three mixer faders (picked Nov 2026).
+ * Settings is three mixer faders (picked Nov 2026); sound / soundOff are the
+ * ride screen's cue toggle.
  *
  * The timer's hand is its own path (`.metric-icon__hand`, pivot at the dial
  * centre = the path's start) so it can be spun, as on the loading screen.
  */
 
-export type Metric = "cadence" | "heart" | "power" | "timer" | "settings";
+export type Metric = "cadence" | "heart" | "power" | "timer" | "settings" | "sound" | "soundOff";
 
 /** Ink bounds [x, y, width, height] per master: getBBox() of the paths, grown by stroke / 2. */
 const INK = {
-  small: { cadence: [3, 3, 24.392, 26], heart: [3, 4.261, 26, 23.739], power: [6, 3, 20, 26], timer: [5, 2, 22, 27], settings: [4.2, 3.0, 23.6, 26] },
-  large: { cadence: [6.25, 6.25, 48.285, 51.5], heart: [6.25, 8.771, 51.5, 46.979], power: [12.25, 6.25, 39.5, 51.5], timer: [9.75, 4.25, 44.5, 54], settings: [8.65, 6.25, 46.7, 51.5] },
+  small: { cadence: [3, 3, 24.392, 26], heart: [3, 4.261, 26, 23.739], power: [6, 3, 20, 26], timer: [5, 2, 22, 27], settings: [4.2, 3.0, 23.6, 26], sound: [4, 5, 24.95, 22], soundOff: [4, 5, 25, 22] },
+  large: { cadence: [6.25, 6.25, 48.285, 51.5], heart: [6.25, 8.771, 51.5, 46.979], power: [12.25, 6.25, 39.5, 51.5], timer: [9.75, 4.25, 44.5, 54], settings: [8.65, 6.25, 46.7, 51.5], sound: [8.25, 10.25, 49.4, 43.5], soundOff: [8.25, 10.25, 49.5, 43.5] },
 } as const;
 
 const MASTERS = {
@@ -32,6 +33,8 @@ const MASTERS = {
     power: <path d="m18 4-11 14h8l-2 10 12-15h-8l1-9Z" />,
     timer: <><circle cx="16" cy="18" r="10" /><path d="M12 3h8m-4 0v5m7 3 3-3" /><path className="metric-icon__hand" d="M16 18l4-4" /></>,
     settings: <><path d="M8 4V17.2M8 22.8V28 M16 4V7.2M16 12.8V28 M24 4V13.2M24 18.8V28" /><circle cx="8" cy="20" r="2.8" /><circle cx="16" cy="10" r="2.8" /><circle cx="24" cy="16" r="2.8" /></>,
+    sound: <><path d="M5 12h5l7-6v20l-7-6H5Z" /><path d="M21 11.5a6 6 0 0 1 0 9M24.5 8a11 11 0 0 1 0 16" /></>,
+    soundOff: <><path d="M5 12h5l7-6v20l-7-6H5Z" /><path d="m21 12 7 8m0-8-7 8" /></>,
   },
   large: {
     box: 64,
@@ -41,6 +44,8 @@ const MASTERS = {
     power: <path d="M36.5 8 14 36h16l-4.5 20L50 26H34l2.5-18Z" />,
     timer: <><circle cx="32" cy="36" r="20.5" /><path d="M24.5 6h15M32 6v9.5m14.5 6 5.5-5.5" /><path className="metric-icon__hand" d="M32 36l8.5-8.5" /></>,
     settings: <><path d="M16 8V34.4M16 45.6V56 M32 8V14.4M32 25.6V56 M48 8V26.4M48 37.6V56" /><circle cx="16" cy="40" r="5.6" /><circle cx="32" cy="20" r="5.6" /><circle cx="48" cy="32" r="5.6" /></>,
+    sound: <><path d="M10 24h10l14-12v40L20 40H10Z" /><path d="M42 23a12 12 0 0 1 0 18M49 16a22 22 0 0 1 0 32" /></>,
+    soundOff: <><path d="M10 24h10l14-12v40L20 40H10Z" /><path d="m42 24 14 16m0-16L42 40" /></>,
   },
 } as const;
 

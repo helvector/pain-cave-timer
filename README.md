@@ -61,7 +61,7 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
 - **Ride screen.** Countdown, target watts, zone, set position ("2 of 3"), the
   coach's cadence / RPE / heart-rate cues, and a profile chart with a "now"
   line. Blocks auto-advance with distinct start, work, recovery and countdown
-  cues; optional spoken calls come at one minute left (blocks over 90 s) and
+  cues (4 s by default), a sound on/off button among the ride controls; optional spoken calls come at one minute left (blocks over 90 s) and
   at 30 or 15 s left (blocks at least twice that long).
 - **Only the numbers until you tap.** Time, watts, heart rate and cadence stay
   on screen; the first tap brings up the controls, the zone and set position,
@@ -80,7 +80,7 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
 - **Your zones, your colours, your cues.** The Settings page (`/admin`, the
   Settings button on the start screen) has numbered sections and a sticky tab
   bar: power zones, colours, resting/max heart rate, the countdown length
-  (off, 3, 5 or 10 s), the last-minute and 30/15 s calls, and the "now" line
+  (off, 3, 4, 5 or 10 s), the last-minute and 30/15 s calls, and the "now" line
   style, with a Play button to hear each cue.
 
 ## Try it without a mailbox

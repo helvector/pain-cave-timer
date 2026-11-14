@@ -63,12 +63,12 @@ describe("audio settings", () => {
   // A settings.json saved before audio settings existed.
   const saved: Partial<typeof DEFAULT_SETTINGS> = { ...DEFAULT_SETTINGS };
   delete saved.audio;
-  it("keeps today's behaviour for settings saved before audio existed", () => {
+  it("gives settings saved before audio existed the default 4 s countdown", () => {
     const r = validateSettings(saved);
-    expect(r.ok && r.settings.audio).toEqual({ countdown: 3, lastMinute: false, secondCall: 0 });
+    expect(r.ok && r.settings.audio).toEqual({ countdown: 4, lastMinute: false, secondCall: 0 });
   });
   it("accepts every offered countdown and the last-minute toggle", () => {
-    for (const countdown of [0, 3, 5, 10]) {
+    for (const countdown of [0, 3, 4, 5, 10]) {
       const r = validateSettings({ ...saved, audio: { countdown, lastMinute: true, secondCall: 15 } });
       expect(r.ok && r.settings.audio).toEqual({ countdown, lastMinute: true, secondCall: 15 });
     }

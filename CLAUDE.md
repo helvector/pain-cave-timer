@@ -53,7 +53,7 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   Settings: numbered sections, sticky numbered tab bar, faders icon), `Splash`
   (opening animation, "Stamp", once per page load).
 - `src/lib/settings.ts` zones, playhead style, hrRest/hrMax, audio (countdown
-  0/3/5/10 s, last-minute toggle, second call 0/30/15 s; missing fields
+  0/3/4/5/10 s, default 4, last-minute toggle, second call 0/30/15 s; missing fields
   default, never reject, or a saved settings.json resets) defaults; `timer.ts` `timedCue` decides when
   ticks and the last-minute cue fire; `audio.ts` synthesises every sound (the
   last-minute words use Web Speech, untested in Bluefy);

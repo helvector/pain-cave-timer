@@ -144,6 +144,13 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
     else onDone(Math.min(t, workout.totalSec), trace);
   }, [onDone, onExit, workout.totalSec]);
 
+  // Sound on/off for this ride: silences cues, the schedule keeps running.
+  const [muted, setMuted] = useState(false);
+  const toggleSound = useCallback(() => {
+    cues.setMuted(!muted);
+    setMuted(!muted);
+  }, [cues, muted]);
+
   const togglePause = useCallback(() => {
     if (pausedAt === null) {
       setPausedAt(Date.now());
@@ -289,6 +296,9 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
           <button onClick={() => jumpTo(pos.index - 1)} disabled={pos.index === 0}>Back</button>
           <button onClick={togglePause}>{pausedAt !== null ? "Resume" : "Pause"}</button>
           <button onClick={() => jumpTo(pos.index + 1)} disabled={!next}>Skip</button>
+          <button className="controls__sound" onClick={toggleSound} aria-pressed={muted} aria-label={muted ? "Turn sound on" : "Turn sound off"}>
+            <MetricIcon metric={muted ? "soundOff" : "sound"} />
+          </button>
         </motion.div>
         {!shown && !everRevealed && <p className="controls-hint" aria-hidden>Tap for controls</p>}
       </div>
