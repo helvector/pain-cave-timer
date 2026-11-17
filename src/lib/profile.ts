@@ -53,6 +53,23 @@ export interface ProfileBar {
   zone: PowerZoneId;
 }
 
+/**
+ * How crowded the start-screen chart is, which picks how it's labelled:
+ *   roomy   up to eight blocks, none under 6% of the session (about 24 px on
+ *           a phone): a label fits on every bar.
+ *   high    sixteen or more blocks that repeat (at most half as many distinct
+ *           watt targets as blocks): thin bars, few values, so a scale reads best.
+ *   medium  everything between.
+ */
+export type ChartDensity = "roomy" | "medium" | "high";
+
+export function chartDensity(blocks: Block[], totalSec: number): ChartDensity {
+  const thin = blocks.some((b) => b.durationSec / Math.max(totalSec, 1) < 0.06);
+  if (blocks.length <= 8 && !thin) return "roomy";
+  const targets = new Set(blocks.map((b) => (b.target.watts ? `${b.target.watts.lo}-${b.target.watts.hi}` : "none")));
+  return blocks.length >= 16 && targets.size <= blocks.length / 2 ? "high" : "medium";
+}
+
 /** Geometry for the profile chart, in seconds along x and 0..1 along y. */
 export function profileBars(blocks: Block[], ftp?: number, zones: PowerZone[] = POWER_ZONES): ProfileBar[] {
   const heights = blocks.map((b) => blockHeight(b, ftp));

@@ -3,7 +3,14 @@
 import type { Block, StrengthSession, Workout } from "@/lib/workout/types";
 import { cadenceLabel, clock, wattsLabel, zoneLabel } from "@/lib/timer";
 import { blockZone, type PowerZone } from "@/lib/profile";
-import { WorkoutProfile } from "./WorkoutProfile";
+import { StartChart, type ChartStyle } from "./StartChart";
+
+/** `?chart=scrub|scale` shows that chart style on every session, to try it out. The start screen only renders client-side, after the workout loads. */
+function forcedChart(): ChartStyle | undefined {
+  if (typeof window === "undefined") return undefined;
+  const v = new URLSearchParams(window.location.search).get("chart");
+  return v === "scrub" || v === "scale" ? v : undefined;
+}
 import { MetricIcon } from "./MetricIcon";
 
 /**
@@ -100,7 +107,7 @@ export function ConfirmHero(p: Parts) {
         {p.dayTabs}
         {p.issues}
         {w.isRestDay && <p className="cv__rest">Rest day. Nothing to ride.</p>}
-        {!w.isRestDay && w.blocks.length > 0 && <WorkoutProfile workout={w} className="profile--hero" blockLabels />}
+        {!w.isRestDay && w.blocks.length > 0 && <StartChart workout={w} force={forcedChart()} />}
         {!w.blocks.length && w.strength?.length ? <Gym sessions={w.strength} showTitle={false} /> : null}
         {w.blocks.length > 0 && <div className="tiz" aria-label="Time in zone">
           <div className="tiz__bar">

@@ -57,7 +57,9 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
   "Repeat N times" sets, cadence, heart-rate notes.
 - **Check before you ride.** A confirmation screen with the session's shape
   (minutes inside each bar under a small timer icon, "10" or "1.5"; the watt
-  target above it under a power icon, stacked when the bar is narrow), time in each power zone, and one
+  target above it under a power icon, stacked when the bar is narrow; crowded
+  sessions switch to a drag-across readout, and long repetitive ones to a watt
+  scale drawn once across the chart with each block length listed once), time in each power zone, and one
   row per block. Anything the parser wasn't sure of is listed, never dropped.
 - **Ride screen.** Countdown, target watts, zone, set position ("2 of 3"), the
   coach's cadence / RPE / heart-rate cues, and a profile chart with a "now"
@@ -107,6 +109,7 @@ redacted sample emails in `fixtures/` and needs no configuration.
 | `at=end` | Start 8 s before the finish with a simulated heart-rate trace, to see the end screen |
 | `fx=ember` · `comet` · `plasma` · `stardust` | Preview a "now" line style |
 | `wait=5` | Hold the loading screen for 5 s, to see it after the opening splash |
+| `chart=scrub` · `scale` | Show that start-screen chart style on every session (also works outside demo mode) |
 
 ## Run your own
 

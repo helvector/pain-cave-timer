@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { addHrSample, blockZone, hrPath, POWER_ZONES, profileBars, shade, tint, ZONE_COLORS, zoneForWatts, type HrSample } from "../src/lib/profile";
+import { addHrSample, blockZone, chartDensity, hrPath, POWER_ZONES, profileBars, shade, tint, ZONE_COLORS, zoneForWatts, type HrSample } from "../src/lib/profile";
 
 const ou = parseTrainingPeaksEmail(readFileSync("fixtures/trainingpeaks-overunder-3x16.html", "utf8"), {
   subject: "Schedule for Tuesday 10/06/2026 to Wednesday 10/07/2026",
@@ -102,5 +102,28 @@ describe("tint", () => {
     expect(tint("#000000", 0.5)).toBe("#808080");
     expect(tint("#ff6a1a", 0)).toBe("#ff6a1a");
     expect(tint("#3a8ee6", 1)).toBe("#ffffff");
+  });
+});
+
+describe("chartDensity", () => {
+  const block = (durationSec: number, lo?: number, hi?: number) => ({ durationSec, target: lo ? { watts: { lo, hi: hi ?? lo } } : {} }) as unknown as Parameters<typeof chartDensity>[0][number];
+  const total = (bs: { durationSec: number }[]) => bs.reduce((s, b) => s + b.durationSec, 0);
+  it("is roomy with up to eight blocks and no thin bars", () => {
+    const bs = [block(600, 138, 188), block(900, 190, 213), block(300, 3, 135), block(900, 190, 213), block(300, 3, 135), block(900, 190, 213), block(300, 3, 135)];
+    expect(chartDensity(bs, total(bs))).toBe("roomy");
+  });
+  it("is medium with more than eight blocks, or a thin bar", () => {
+    const ladder = Array.from({ length: 13 }, (_, i) => block(300, 120 + i * 10, 130 + i * 10));
+    expect(chartDensity(ladder, total(ladder))).toBe("medium");
+    const thin = [block(3600, 150, 160), block(60, 300, 320), block(600, 100, 120)];
+    expect(chartDensity(thin, total(thin))).toBe("medium");
+  });
+  it("is high with sixteen or more blocks that repeat", () => {
+    const sets = Array.from({ length: 3 }, () => [block(240, 220, 235), block(240, 240, 250), block(240, 220, 235), block(240, 240, 250), block(480, 3, 135)]).flat();
+    const overUnders = [block(600, 138, 188), ...sets, block(480, 100, 135)];
+    expect(overUnders.length).toBe(17);
+    expect(chartDensity(overUnders, total(overUnders))).toBe("high");
+    const varied = Array.from({ length: 18 }, (_, i) => block(300, 100 + i * 8, 110 + i * 8));
+    expect(chartDensity(varied, total(varied))).toBe("medium");
   });
 });

@@ -55,7 +55,10 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   production, so previews and local dev can't exercise the live mail path.
 - `src/components/`: `App` (phases), `Confirm` + `ConfirmVariants` (`ConfirmHero`
   is the confirmation screen), `Ride`, `Summary` (end-of-ride image),
-  `WorkoutProfile` (bar chart), `PlayheadFx`, `Admin` (/admin, titled
+  `WorkoutProfile` (bar chart), `StartChart` (start-screen chart: labels on
+  every bar when roomy, "Scrub" drag readout when medium, "Scale" watt lines
+  + length key when 16+ repetitive blocks; rule is `chartDensity` in
+  `lib/profile.ts`; `?chart=scrub|scale` forces one), `PlayheadFx`, `Admin` (/admin, titled
   Settings: numbered sections, sticky numbered tab bar, faders icon), `Splash`
   (opening animation, "Stamp", once per page load).
 - `src/lib/settings.ts` zones, playhead style, hrRest/hrMax, audio (countdown
@@ -95,7 +98,7 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
 as ten day tabs), `bpm=150` (simulated heart rate), `at=end` (start 8 s before
 the finish with a synthetic heart-rate trace, to see the end screen),
 `fx=ember|comet|plasma|stardust`, `wait=5` (hold the loading screen 5 s after
-the splash).
+the splash), `chart=scrub|scale` (force a start-chart style).
 
 ## Rules
 

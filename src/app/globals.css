@@ -683,3 +683,44 @@ a.button { display: inline-block; border: 1px solid var(--line); border-radius: 
 .resume__now { font-size: 0.92rem; line-height: 1.45; }
 .resume__actions { display: flex; gap: 10px; margin-top: 6px; }
 .resume__actions .primary { flex: 1; font-size: 1.35rem; padding: 18px; }
+
+/* ---- crowded start chart: Scrub (medium) and Scale (high) --------------- */
+.dense { display: flex; flex-direction: column; gap: 8px; }
+
+/* Scrub: clean bars, one big readout that follows a finger dragged across. */
+.profile--hero-scrub { height: clamp(130px, 25vh, 240px); }
+.scrub { gap: 10px; }
+.scrub__readout { display: flex; flex-direction: column; gap: 6px; }
+.scrub__big {
+  display: flex; align-items: baseline; gap: 22px; margin: 0;
+  font-family: var(--font-display), var(--font-ui), sans-serif; font-size: 3.4rem; line-height: 0.9;
+}
+.scrub__big span { display: inline-flex; align-items: baseline; white-space: nowrap; }
+.scrub__big small { font-size: 0.36em; margin-left: 0.3em; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.scrub__icon { --cap-mid: 0.333em; --h: 0.42em; margin-right: 0.18em; align-self: center; color: var(--muted); }
+.scrub__sub { color: var(--muted); font-size: 0.95rem; }
+.scrub__sub b { color: var(--fg); font-weight: 600; }
+.scrub__chart { position: relative; touch-action: pan-y; cursor: ew-resize; padding-bottom: 9px; }
+.scrub__dim { position: absolute; top: 0; bottom: 9px; background: rgba(0, 0, 0, 0.58); pointer-events: none; transition: left 120ms ease, width 120ms ease; }
+.scrub__mark { position: absolute; bottom: 0; height: 4px; border-radius: 2px; background: var(--fg); pointer-events: none; transition: left 120ms ease, width 120ms ease; }
+.scrub__hint { font-size: 0.82rem; }
+
+/* Scale: lines across the chart at each watt level, the watts once in white on the lines at the right end, block lengths once below. */
+.scale { display: flex; flex-direction: column; gap: 4px; }
+.scale__icon { --icon-size: 18px; color: var(--muted); }
+.scale__chart { position: relative; }
+.scale__line { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid rgba(255, 255, 255, 0.3); pointer-events: none; }
+.scale__col { position: absolute; inset: 0; pointer-events: none; font-family: var(--font-display), var(--font-ui), sans-serif; font-size: var(--fs); line-height: 1; }
+.scale__watts {
+  position: absolute; right: 2px; transform: translateY(-50%); white-space: nowrap; color: #fff;
+  display: inline-flex; align-items: center; gap: 5px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 1px 8px rgba(0, 0, 0, 0.75);
+}
+.scale__watts-icon { --h: 0.6em; filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9)); }
+.scale__lengths {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px;
+  font-family: var(--font-display), var(--font-ui), sans-serif; font-size: 1.6rem; line-height: 1;
+}
+.scale__length { display: inline-flex; align-items: center; gap: 6px; }
+.scale__length i { display: block; height: 14px; border-radius: 2px; background: rgba(255, 255, 255, 0.4); }
+.scale__lengths small { font-family: var(--font-ui), sans-serif; font-size: 0.82rem; color: var(--muted); }
