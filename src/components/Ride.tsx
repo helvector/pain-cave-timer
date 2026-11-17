@@ -42,7 +42,19 @@ interface Props {
   startAtSec?: number;
   /** Demo only: heart-rate trace to start from. */
   seedHr?: HrSample[];
+  /** Pick up a saved ride: its clock and heart-rate trace so far. */
+  resume?: RideClock & { hr: HrSample[] };
+  /** The clock and trace, each time the clock changes (start, pause, Back, Skip) and every 30 s, for saving. */
+  onState?: (state: RideClock & { hr: HrSample[]; clockChanged: boolean }) => void;
 }
+
+/** Wall-clock state of a ride: elapsed = (pausedAt ?? now) − startedAt. */
+export interface RideClock {
+  startedAt: number;
+  pausedAt: number | null;
+}
+
+const SAVE_EVERY_MS = 30_000;
 
 /**
  * The riding screen. Time is wall-clock based: elapsed = now − startedAt − paused,
@@ -50,13 +62,13 @@ interface Props {
  * the block index changes; countdown ticks (3 s by default, set on /admin)
  * lead into every transition, plus an optional last-minute cue.
  */
-export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, seedHr }: Props) {
+export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, seedHr, resume, onState }: Props) {
   const { settings } = useSettings();
   // No strap: a calm quarter intensity. With one: resting → max heart rate maps to 0 → 1.
   const intensity = bpm === undefined ? 0.25 : hrIntensity(bpm, settings.hrRest, settings.hrMax);
   const cues = useMemo(() => new Cues(), []);
-  const [startedAt, setStartedAt] = useState(() => Date.now() - startAtSec * 1000);
-  const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const [startedAt, setStartedAt] = useState(() => resume?.startedAt ?? Date.now() - startAtSec * 1000);
+  const [pausedAt, setPausedAt] = useState<number | null>(() => resume?.pausedAt ?? null);
   const [now, setNow] = useState(() => Date.now());
   const lastIndex = useRef(0);
   const [finishing, setFinishing] = useState(false);
@@ -71,7 +83,7 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
 
   // Heart-rate trace for the profile: one reading every 2 s while riding,
   // a null when the strap has no reading so the line breaks there.
-  const [hrTrace, setHrTrace] = useState<HrSample[]>(() => seedHr ?? []);
+  const [hrTrace, setHrTrace] = useState<HrSample[]>(() => resume?.hr ?? seedHr ?? []);
   const latest = useRef({ bpm, elapsedSec, hrTrace });
   useEffect(() => {
     latest.current = { bpm, elapsedSec, hrTrace };
@@ -85,6 +97,20 @@ export function Ride({ workout, onDone, onExit, bpm, playhead, startAtSec = 0, s
     }, 2000);
     return () => clearInterval(id);
   }, [pausedAt, workout.totalSec]);
+
+  // Report the clock for saving: on every change, and every 30 s for the heart-rate trace.
+  const onStateRef = useRef(onState);
+  useEffect(() => { onStateRef.current = onState; });
+  useEffect(() => {
+    onStateRef.current?.({ startedAt, pausedAt, hr: latest.current.hrTrace, clockChanged: true });
+  }, [startedAt, pausedAt]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (doneRef.current) return;
+      onStateRef.current?.({ startedAt, pausedAt, hr: latest.current.hrTrace, clockChanged: false });
+    }, SAVE_EVERY_MS);
+    return () => clearInterval(id);
+  }, [startedAt, pausedAt]);
 
   // Unlock audio, go fullscreen, keep the screen awake. All from the Start tap.
   useEffect(() => {

@@ -11,6 +11,9 @@ import { syntheticHr } from "@/lib/demo-hr";
 import type { HrSample } from "@/lib/profile";
 import { Splash } from "./Splash";
 import { MetricIcon } from "./MetricIcon";
+import { ResumeSheet, type ResumeOffer } from "./ResumeSheet";
+import { clearLocal, newer, parseSession, readLocal, resumableWorkout, writeLocal, type RideSession } from "@/lib/ride-session";
+import type { RideClock } from "./Ride";
 
 const TOKEN_KEY = "pct.token";
 
@@ -28,8 +31,8 @@ type Phase =
   | { name: "loading" }
   | { name: "token"; message?: string }
   | { name: "error"; message: string }
-  | { name: "confirm"; result: ApiResult; selected: Workout }
-  | { name: "ride"; workout: Workout }
+  | { name: "confirm"; result: ApiResult; selected: Workout; offer?: ResumeOffer }
+  | { name: "ride"; workout: Workout; resume?: RideClock & { hr: HrSample[] } }
   | { name: "done"; workout: Workout; elapsedSec: number; hr: HrSample[] };
 
 function readToken(): string {
@@ -73,6 +76,18 @@ function AppScreens() {
   }, [demoBpm]);
   const liveBpm = demoBpm ? (simBpm ?? demoBpm) : heartRate.status === "connected" ? heartRate.bpm : undefined;
 
+  // The ride in progress, saved on every clock change (and every 30 s) so a restart can resume it.
+  // Always on this device; also on the server (not in demo), sent only when the clock changes.
+  const saveSession = useCallback((w: Workout, st: RideClock & { hr: HrSample[]; clockChanged: boolean }) => {
+    const s: RideSession = { v: 1, date: w.date, title: w.title, startedAt: st.startedAt, pausedAt: st.pausedAt, hr: st.hr, savedAt: Date.now() };
+    writeLocal(demo, s);
+    if (!demo && st.clockChanged) void sendRide("PUT", s);
+  }, [demo]);
+  const clearSession = useCallback(() => {
+    clearLocal(demo);
+    if (!demo) void sendRide("DELETE");
+  }, [demo]);
+
   // fresh: read the mailbox instead of the saved copy (the Reload button).
   const load = useCallback(async (fresh = false) => {
     const token = readToken();
@@ -87,6 +102,8 @@ function AppScreens() {
     if (demo && params.get("fixture")) qs.set("fixture", params.get("fixture")!);
     try {
       if (demoWaitMs) await new Promise((r) => setTimeout(r, demoWaitMs));
+      // Any unfinished ride: this device's copy, and the server's (in parallel with the workout).
+      const saved = demo ? Promise.resolve(undefined) : fetchSavedRide(token);
       const res = await fetch(`/api/workout?${qs}`, { headers: demo ? {} : { Authorization: `Bearer ${token}` }, cache: "no-store" });
       const body = (await res.json()) as ApiResult;
       if (res.status === 401) {
@@ -102,7 +119,11 @@ function AppScreens() {
         setPhase({ name: "error", message: body.warnings.join(" ") || "No workout found." });
         return;
       }
-      setPhase({ name: "confirm", result: body, selected });
+      const now = Date.now();
+      const session = newer(readLocal(demo), await saved);
+      const resumeWorkout = resumableWorkout(session, body.days, now);
+      const offer = session && resumeWorkout ? { session, workout: resumeWorkout, at: now } : undefined;
+      setPhase({ name: "confirm", result: body, selected: resumeWorkout ?? selected, offer });
     } catch (err) {
       setPhase({ name: "error", message: err instanceof Error ? err.message : String(err) });
     }
@@ -168,7 +189,9 @@ function AppScreens() {
   }
 
   if (phase.name === "confirm") {
+    const offer = phase.offer;
     return (
+      <>
       <Confirm
         result={phase.result}
         selected={phase.selected}
@@ -177,6 +200,14 @@ function AppScreens() {
         onReload={refresh}
         heartRate={heartRate}
       />
+      {offer && (
+        <ResumeSheet
+          offer={offer}
+          onResume={() => setPhase({ name: "ride", workout: offer.workout, resume: { startedAt: offer.session.startedAt, pausedAt: offer.session.pausedAt, hr: offer.session.hr } })}
+          onDiscard={() => { clearSession(); setPhase({ ...phase, offer: undefined }); }}
+        />
+      )}
+      </>
     );
   }
 
@@ -188,11 +219,37 @@ function AppScreens() {
         playhead={fx}
         startAtSec={atEnd ? Math.max(0, phase.workout.totalSec - 8) : 0}
         seedHr={atEnd ? syntheticHr(phase.workout, phase.workout.totalSec - 8) : undefined}
-        onDone={(elapsedSec, hr) => setPhase({ name: "done", workout: phase.workout, elapsedSec, hr })}
-        onExit={backToStart}
+        resume={phase.resume}
+        onState={(st) => saveSession(phase.workout, st)}
+        onDone={(elapsedSec, hr) => { clearSession(); setPhase({ name: "done", workout: phase.workout, elapsedSec, hr }); }}
+        onExit={() => { clearSession(); backToStart(); }}
       />
     );
   }
 
   return <Summary workout={phase.workout} elapsedSec={phase.elapsedSec} hr={phase.hr} onDone={backToStart} />;
+}
+
+/** The server's copy of an unfinished ride, if any. Never blocks the app: failures mean "none". */
+async function fetchSavedRide(token: string): Promise<RideSession | undefined> {
+  try {
+    const res = await fetch("/api/ride", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    if (!res.ok) return undefined;
+    return parseSession((await res.json()).session);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Save or clear the server's copy. Fire and forget: the device copy is the one a restart relies on first. */
+async function sendRide(method: "PUT" | "DELETE", s?: RideSession): Promise<void> {
+  const token = readToken();
+  if (!token) return;
+  try {
+    await fetch("/api/ride", {
+      method,
+      headers: { Authorization: `Bearer ${token}`, ...(s ? { "Content-Type": "application/json" } : {}) },
+      body: s ? JSON.stringify(s) : undefined,
+    });
+  } catch { /* offline: the device copy still has it */ }
 }

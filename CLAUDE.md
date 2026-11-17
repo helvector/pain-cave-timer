@@ -45,6 +45,12 @@ Run lint, typecheck and tests before every deploy. The dev server rewrites
   `fresh=1` (Reload) always reads it. `src/app/api/cron/refresh` (bearer
   `CRON_SECRET`, `vercel.json` crons) fills it. `src/app/api/settings` (GET
   open, PUT needs `APP_TOKEN`; Blob store).
+- Resume: `src/lib/ride-session.ts` (session shape, rules, device copy in
+  localStorage `pct.ride` / `pct.ride.demo`), `src/app/api/ride` (server copy,
+  Blob `ride/<VERCEL_ENV>.json`, bearer `APP_TOKEN`), `ResumeSheet`. Ride
+  reports its clock via `onState` on every clock change and every 30 s; the
+  server copy is sent only on clock changes; Exit, finish and Discard clear
+  both. Demo mode uses only the device copy.
 - Mail credentials are Production-only env vars, and crons only run on
   production, so previews and local dev can't exercise the live mail path.
 - `src/components/`: `App` (phases), `Confirm` + `ConfirmVariants` (`ConfirmHero`

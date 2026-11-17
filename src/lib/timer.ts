@@ -53,6 +53,19 @@ export function wattsLabel(block: Block): string | undefined {
   return w.lo === w.hi ? String(w.lo) : `${w.lo}–${w.hi}`;
 }
 
+/**
+ * A block's length in minutes for the start-screen chart: "10", "1.5",
+ * "0.75". Coaches plan in minutes; quarter minutes show as decimals, other
+ * odd lengths under a minute as seconds ("20s"), anything else to one decimal.
+ */
+export function minutesLabel(sec: number): string {
+  const s = Math.round(sec);
+  if (s % 60 === 0) return String(s / 60);
+  if (s % 15 === 0) return String(s / 60);
+  if (s < 60) return `${s}s`;
+  return (s / 60).toFixed(1);
+}
+
 /** What to call the block at a glance: the coach's zone if any, else its kind. */
 export function zoneLabel(block: Block): string {
   const label = block.target.zone?.label;

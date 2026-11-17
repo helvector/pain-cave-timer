@@ -56,7 +56,8 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
   parses TrainingPeaks' markup: warm-ups, repeats, ramps, over-unders,
   "Repeat N times" sets, cadence, heart-rate notes.
 - **Check before you ride.** A confirmation screen with the session's shape
-  (each bar labelled with its time and watts), time in each power zone, and one
+  (minutes inside each bar under a small timer icon, "10" or "1.5"; the watt
+  target above it under a power icon, stacked when the bar is narrow), time in each power zone, and one
   row per block. Anything the parser wasn't sure of is listed, never dropped.
 - **Ride screen.** Countdown, target watts, zone, set position ("2 of 3"), the
   coach's cadence / RPE / heart-rate cues, and a profile chart with a "now"
@@ -66,6 +67,10 @@ Screenshots are from demo mode on an iPhone 17 Pro-sized screen (402×874).
 - **Only the numbers until you tap.** Time, watts, heart rate and cadence stay
   on screen; the first tap brings up the controls, the zone and set position,
   and what's next, and they all sink away after 3 s. No accidental pauses.
+- **Pick up where you left off.** A ride saves its clock on the phone and on
+  the server as it goes. Reopen the app mid-ride (a crash, a closed tab, a
+  flat battery) and a "Resume ride?" sheet offers it back. The clock carries on
+  from the original start, so time away counts, as it did on the bike.
 - **Heart rate over Bluetooth** (tested with a Whoop broadcasting heart rate):
   live BPM, a heart-rate line over the chart, and an animated background that
   pulses with your heart.
@@ -213,6 +218,7 @@ src/lib/workout/      parser: types, zones, duration, target, step, text, email-
 src/lib/mail/         IMAP source (imapflow + mailparser), env config, saved-email cache
 src/app/api/workout/  workout endpoint (token, or ?demo=1; cache first, fresh=1 for live)
 src/app/api/cron/     refresh: saves the newest emails (CRON_SECRET)
+src/app/api/ride/     the ride in progress, for resuming (token; GET/PUT/DELETE)
 src/app/api/settings/ zones and display settings (GET open, PUT needs the token)
 src/app/admin/        settings page
 src/components/       App (phases) · Confirm / ConfirmHero · Ride · Summary · WorkoutProfile · PlayheadFx · Admin

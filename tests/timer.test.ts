@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseTrainingPeaksEmail } from "../src/lib/workout";
-import { clock, positionAt, timedCue, wattsLabel, zoneLabel } from "../src/lib/timer";
+import { clock, minutesLabel, positionAt, timedCue, wattsLabel, zoneLabel } from "../src/lib/timer";
 
 const html = readFileSync("fixtures/trainingpeaks-sweet-spot-3x15.html", "utf8");
 const w = parseTrainingPeaksEmail(html, { subject: "Schedule for Thursday 09/10/2026 to Friday 09/11/2026" }).days[0];
@@ -74,5 +74,15 @@ describe("timedCue", () => {
     expect(timedCue(30, 60, { ...on, secondCall: 30 })).toBe("thirty");
     expect(timedCue(15, 30, { ...on, secondCall: 15 })).toBe("fifteen");
     expect(timedCue(60, 240, { ...on, secondCall: 30 })).toBe("lastMinute");
+  });
+});
+
+describe("minutesLabel", () => {
+  it("shows whole minutes without a colon, and quarter minutes as decimals", () => {
+    expect([600, 240, 60, 90, 45, 30, 15, 12600].map(minutesLabel)).toEqual(["10", "4", "1", "1.5", "0.75", "0.5", "0.25", "210"]);
+  });
+  it("falls back to seconds under a minute and one decimal above", () => {
+    expect(minutesLabel(20)).toBe("20s");
+    expect(minutesLabel(100)).toBe("1.7");
   });
 });
